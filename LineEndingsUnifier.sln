@@ -5,7 +5,13 @@ VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineEndingsUnifier", "LineEndingsUnifier\LineEndingsUnifier.csproj", "{4AFFFFFE-B247-463F-8C0F-A72A86332BA0}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "LineEndingsUnifier.Shared", "LineEndingsUnifier.Shared\LineEndingsUnifier.Shared.shproj", "{84F0143D-2EAE-475D-88A5-196B0777AFE1}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		LineEndingsUnifier.Shared\LineEndingsUnifier.Shared.projitems*{4afffffe-b247-463f-8c0f-a72a86332ba0}*SharedItemsImports = 4
+		LineEndingsUnifier.Shared\LineEndingsUnifier.Shared.projitems*{84f0143d-2eae-475d-88a5-196b0777afe1}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
