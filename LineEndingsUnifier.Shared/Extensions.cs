@@ -1,6 +1,7 @@
 ﻿using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
+using System;
 using System.Collections.Generic;
 
 namespace JakubBielawa.LineEndingsUnifier
@@ -11,7 +12,7 @@ namespace JakubBielawa.LineEndingsUnifier
         {
             foreach (var s in strings)
             {
-                if (str.EndsWith(s))
+                if (str.EndsWith(s, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -23,7 +24,7 @@ namespace JakubBielawa.LineEndingsUnifier
         {
             foreach (var s in strings)
             {
-                if (str.Equals(s))
+                if (str.Equals(s, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
