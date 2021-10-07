@@ -57,12 +57,12 @@ namespace JakubBielawa.LineEndingsUnifier
                     numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
                     break;
                 case LineEndings.Dominant:
-                    if (numberOfWindowsLineEndings > numberOfLinuxLineEndings && numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
+                    if (numberOfWindowsLineEndings >= numberOfLinuxLineEndings && numberOfWindowsLineEndings >= numberOfMacintoshLineEndings)
                     {
                         replacementString = WindowsLineEndings;
                         numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
                     }
-                    else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings && numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
+                    else if (numberOfLinuxLineEndings >= numberOfWindowsLineEndings && numberOfLinuxLineEndings >= numberOfMacintoshLineEndings)
                     {
                         replacementString = LinuxLineEndings;
                         numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
