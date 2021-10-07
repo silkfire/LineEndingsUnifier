@@ -306,7 +306,7 @@ namespace JakubBielawa.LineEndingsUnifier
 
             if (this.OptionsPage.AddNewlineOnLastLine)
             {
-                if (!changedText.EndsWith(Utilities.GetNewlineString(lineEndings)))
+                if (changedText.Length != 0 && !changedText.EndsWith(Utilities.GetNewlineString(lineEndings)))
                 {
                     changedText += Utilities.GetNewlineString(lineEndings);
                 }
