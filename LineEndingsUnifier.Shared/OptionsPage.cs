@@ -101,12 +101,13 @@ namespace JakubBielawa.LineEndingsUnifier
             get { return trackChanges; }
             set
             {
-                if (value == false)
+                if (!value)
                 {
                     DTE2 ide = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE2;
-                    if (!ide.Solution.FullName.Equals(string.Empty))
+                    string fullName = ide.Solution.FullName;
+                    if (!string.IsNullOrEmpty(fullName))
                     {
-                        var path = Path.GetDirectoryName(ide.Solution.FullName) + "\\.leu";
+                        var path = Path.GetDirectoryName(fullName) + "\\.leu";
                         if (File.Exists(path))
                         {
                             File.Delete(path);

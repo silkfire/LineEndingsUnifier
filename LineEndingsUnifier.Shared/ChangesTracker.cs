@@ -38,7 +38,7 @@ namespace JakubBielawa.LineEndingsUnifier
 
         public void SaveLastChanges(Solution solution, Dictionary<string, LastChanges> lastChanges)
         {
-            if (lastChanges != null && lastChanges.Keys.Count > 0)
+            if (lastChanges != null && lastChanges.Count > 0)
             {
                 var filePath = Path.GetDirectoryName(solution.FullName) + "\\.leu";
 
@@ -47,15 +47,15 @@ namespace JakubBielawa.LineEndingsUnifier
                     writer.WriteStartDocument();
                     writer.WriteStartElement("files");
 
-                    foreach (var key in lastChanges.Keys)
+                    foreach (var entry in lastChanges)
                     {
-                        if (File.Exists(key))
+                        if (File.Exists(entry.Key))
                         {
                             writer.WriteStartElement("file");
 
-                            writer.WriteAttributeString("path", key);
-                            writer.WriteAttributeString("dateUnified", lastChanges[key].Ticks.ToString());
-                            writer.WriteAttributeString("lineEndings", lastChanges[key].LineEndings.ToString());
+                            writer.WriteAttributeString("path", entry.Key);
+                            writer.WriteAttributeString("dateUnified", entry.Value.Ticks.ToString());
+                            writer.WriteAttributeString("lineEndings", entry.Value.LineEndings.ToString());
 
                             writer.WriteEndElement();
                         }

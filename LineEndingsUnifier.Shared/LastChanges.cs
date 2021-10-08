@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JakubBielawa.LineEndingsUnifier
 {
-    public class LastChanges
+    public readonly struct LastChanges
     {
         public LastChanges(long ticks, LineEndingsChanger.LineEndings lineEndings)
         {

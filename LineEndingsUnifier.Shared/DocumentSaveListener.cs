@@ -57,12 +57,7 @@ namespace JakubBielawa.LineEndingsUnifier
 
         public int OnBeforeSave(uint docCookie)
         {
-            if (BeforeSave != null)
-            {
-                return BeforeSave(docCookie);
-            }
-
-            return VSConstants.S_OK;
+            return BeforeSave?.Invoke(docCookie) ?? VSConstants.S_OK;
         }
 
         public void Dispose()

@@ -36,8 +36,7 @@ namespace JakubBielawa.LineEndingsUnifier
             // Switches to the UI thread in order to consume some services used in command initialization
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            var mcs = await GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
+            if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService mcs)
             {
                 var menuCommandID = new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_File, (int)PkgCmdIDList.cmdidUnifyLineEndings_File);
                 var menuItem = new MenuCommand(new EventHandler(UnifyLineEndingsInFileEventHandler), menuCommandID);
@@ -85,18 +84,15 @@ namespace JakubBielawa.LineEndingsUnifier
                     var currentDocument = document;
                     var textDocument = currentDocument.Object("TextDocument") as TextDocument;
                     var lineEndings = this.DefaultLineEnding;
-                    var tmp = 0;
 
                     var supportedFileFormats = this.SupportedFileFormats;
                     var supportedFileNames = this.SupportedFileNames;
 
                     if (currentDocument.Name.EndsWithAny(supportedFileFormats) || currentDocument.Name.EqualsAny(supportedFileNames))
                     {
-                        var numberOfIndividualChanges = 0;
-                        var numberOfAllLineEndings = 0;
                         Output("Unifying started...\n");
-                        UnifyLineEndingsInDocument(textDocument, lineEndings, ref tmp, out numberOfIndividualChanges, out numberOfAllLineEndings);
-                        Output(string.Format("{0}: changed {1} out of {2} line endings\n", currentDocument.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                        UnifyLineEndingsInDocument(textDocument, lineEndings, out int numberOfIndividualChanges, out int numberOfAllLineEndings);
+                        Output($"{currentDocument.FullName}: changed {numberOfIndividualChanges} out of {numberOfAllLineEndings} line endings\n");
                         Output("Done\n");
                     }
                 }
@@ -111,7 +107,7 @@ namespace JakubBielawa.LineEndingsUnifier
             var item = selectedItem.ProjectItem;
 
             var choiceWindow = new LineEndingChoice(item.Name, this.DefaultLineEnding);
-            if (choiceWindow.ShowDialog() == true && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
+            if (choiceWindow.ShowDialog().GetValueOrDefault() && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
             {
                 var supportedFileFormats = this.SupportedFileFormats;
                 var supportedFileNames = this.SupportedFileNames;
@@ -127,10 +123,10 @@ namespace JakubBielawa.LineEndingsUnifier
                         stopWatch.Start();
                         UnifyLineEndingsInProjectItem(item, choiceWindow.LineEndings, ref numberOfChanges);
                         stopWatch.Stop();
-                        var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
+                        var secondsElapsed = stopWatch.Elapsed.TotalSeconds;
                         this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                         this.changeLog = null;
-                        Output(string.Format("Done in {0} seconds\n", secondsElapsed));
+                        Output($"Done in {secondsElapsed} seconds\n");
                     });
                 }
                 else
@@ -145,7 +141,7 @@ namespace JakubBielawa.LineEndingsUnifier
             var projectItem = selectedItem.ProjectItem;
 
             var choiceWindow = new LineEndingChoice(selectedItem.Name, this.DefaultLineEnding);
-            if (choiceWindow.ShowDialog() == true && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
+            if (choiceWindow.ShowDialog().GetValueOrDefault() && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
             {
                 System.Threading.Tasks.Task.Run(() =>
                 {
@@ -156,10 +152,10 @@ namespace JakubBielawa.LineEndingsUnifier
                     stopWatch.Start();
                     UnifyLineEndingsInProjectItems(projectItem.ProjectItems, choiceWindow.LineEndings, ref numberOfChanges);
                     stopWatch.Stop();
-                    var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
+                    var secondsElapsed = stopWatch.Elapsed.TotalSeconds;
                     this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                     this.changeLog = null;
-                    Output(string.Format("Done in {0} seconds\n", secondsElapsed));
+                    Output($"Done in {secondsElapsed} seconds\n");
                 });
             }
         }
@@ -170,7 +166,7 @@ namespace JakubBielawa.LineEndingsUnifier
             var selectedProject = selectedItem.Project;
 
             var choiceWindow = new LineEndingChoice(selectedProject.Name, this.DefaultLineEnding);
-            if (choiceWindow.ShowDialog() == true && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
+            if (choiceWindow.ShowDialog().GetValueOrDefault() && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
             {
                 System.Threading.Tasks.Task.Run(() =>
                 {
@@ -181,10 +177,10 @@ namespace JakubBielawa.LineEndingsUnifier
                     stopWatch.Start();
                     UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, choiceWindow.LineEndings, ref numberOfChanges);
                     stopWatch.Stop();
-                    var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
+                    var secondsElapsed = stopWatch.Elapsed.TotalSeconds;
                     this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                     this.changeLog = null;
-                    Output(string.Format("Done in {0} seconds\n", secondsElapsed));
+                    Output($"Done in {secondsElapsed} seconds\n");
                 });
             }
         }
@@ -199,7 +195,7 @@ namespace JakubBielawa.LineEndingsUnifier
                 if (property.Name == "Name")
                 {
                     var choiceWindow = new LineEndingChoice((property as Property).Value.ToString(), this.DefaultLineEnding);
-                    if (choiceWindow.ShowDialog() == true && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
+                    if (choiceWindow.ShowDialog().GetValueOrDefault() && choiceWindow.LineEndings != LineEndingsChanger.LineEndings.None)
                     {
                         System.Threading.Tasks.Task.Run(() =>
                         {
@@ -213,10 +209,10 @@ namespace JakubBielawa.LineEndingsUnifier
                                 UnifyLineEndingsInProjectItems(project.ProjectItems, choiceWindow.LineEndings, ref numberOfChanges);
                             }
                             stopWatch.Stop();
-                            var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
+                            var secondsElapsed = stopWatch.Elapsed.TotalSeconds;
                             this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                             this.changeLog = null;
-                            Output(string.Format("Done in {0} seconds\n", secondsElapsed));
+                            Output($"Done in {secondsElapsed} seconds\n");
                         });
                     }
                     break;
@@ -258,16 +254,14 @@ namespace JakubBielawa.LineEndingsUnifier
             var document = item.Document;
             if (document != null)
             {
-                var numberOfIndividualChanges = 0;
-                var numberOfAllLineEndings = 0;
-
                 if (!this.OptionsPage.TrackChanges ||
                     (this.OptionsPage.TrackChanges && this.changeLog != null && (!this.changeLog.ContainsKey(document.FullName) ||
                                                                                  this.changeLog[document.FullName].LineEndings != lineEndings ||
                                                                                  this.changeLog[document.FullName].Ticks < File.GetLastWriteTime(document.FullName).Ticks)))
                 {
                     var textDocument = document.Object("TextDocument") as TextDocument;
-                    UnifyLineEndingsInDocument(textDocument, lineEndings, ref numberOfChanges, out numberOfIndividualChanges, out numberOfAllLineEndings);
+                    UnifyLineEndingsInDocument(textDocument, lineEndings, out int numberOfIndividualChanges, out int numberOfAllLineEndings);
+                    numberOfChanges += numberOfIndividualChanges;
                     if (documentWindow != null || (documentWindow == null && this.OptionsPage.SaveFilesAfterUnifying))
                     {
                         this.isUnifyingLocked = true;
@@ -277,11 +271,11 @@ namespace JakubBielawa.LineEndingsUnifier
 
                     this.changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEndings);
 
-                    Output(string.Format("{0}: changed {1} out of {2} line endings\n", document.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                    Output($"{document.FullName}: changed {numberOfIndividualChanges} out of {numberOfAllLineEndings} line endings\n");
                 }
                 else
                 {
-                    Output(string.Format("{0}: no need to modify this file\n", document.FullName));
+                    Output($"{document.FullName}: no need to modify this file\n");
                 }
             }
 
@@ -291,7 +285,7 @@ namespace JakubBielawa.LineEndingsUnifier
             }
         }
 
-        private void UnifyLineEndingsInDocument(TextDocument textDocument, LineEndingsChanger.LineEndings lineEndings, ref int numberOfChanges, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
+        private void UnifyLineEndingsInDocument(TextDocument textDocument, LineEndingsChanger.LineEndings lineEndings, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
         {
             var startPoint = textDocument.StartPoint.CreateEditPoint();
             var endPoint = textDocument.EndPoint.CreateEditPoint();
@@ -302,17 +296,17 @@ namespace JakubBielawa.LineEndingsUnifier
             {
                 text = TrailingWhitespaceRemover.RemoveTrailingWhitespace(text);
             }
-            var changedText = LineEndingsChanger.ChangeLineEndings(text, lineEndings, ref numberOfChanges, out numberOfIndividualChanges, out numberOfAllLineEndings);
+            text = LineEndingsChanger.ChangeLineEndings(text, lineEndings, out numberOfIndividualChanges, out numberOfAllLineEndings);
 
             if (this.OptionsPage.AddNewlineOnLastLine)
             {
-                if (changedText.Length != 0 && !changedText.EndsWith(Utilities.GetNewlineString(lineEndings)))
+                if (text.Length != 0 && !text.EndsWith(Utilities.GetNewlineString(lineEndings)))
                 {
-                    changedText += Utilities.GetNewlineString(lineEndings);
+                    text += Utilities.GetNewlineString(lineEndings);
                 }
             }
 
-            startPoint.ReplaceText(originalLength, changedText, (int)vsEPReplaceTextOptions.vsEPReplaceTextKeepMarkers);
+            startPoint.ReplaceText(originalLength, text, (int)vsEPReplaceTextOptions.vsEPReplaceTextKeepMarkers);
         }
 
         private void SetupOutputWindow()
@@ -359,14 +353,16 @@ namespace JakubBielawa.LineEndingsUnifier
             get { return (LineEndingsChanger.LineEndings)this.OptionsPage.DefaultLineEnding; }
         }
 
+        private static readonly char[] semicolon = { ';' };
+
         private string[] SupportedFileFormats
         {
-            get { return this.OptionsPage.SupportedFileFormats.Replace(" ", string.Empty).Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries); }
+            get { return this.OptionsPage.SupportedFileFormats.Replace(" ", string.Empty).Split(semicolon, StringSplitOptions.RemoveEmptyEntries); }
         }
 
         private string[] SupportedFileNames
         {
-            get { return this.OptionsPage.SupportedFileNames.Replace(" ", string.Empty).Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries); }
+            get { return this.OptionsPage.SupportedFileNames.Replace(" ", string.Empty).Split(semicolon, StringSplitOptions.RemoveEmptyEntries); }
         }
 
         private OptionsPage optionsPage;

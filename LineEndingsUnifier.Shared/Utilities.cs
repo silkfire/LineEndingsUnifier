@@ -13,11 +13,10 @@ namespace JakubBielawa.LineEndingsUnifier
         {
             switch (lineEnding)
             {
-                case LineEndingsChanger.LineEndings.Macintosh:
-                    return "\r";
                 case LineEndingsChanger.LineEndings.Windows:
                     return "\r\n";
-                case LineEndingsChanger.LineEndings.Linux:
+                case LineEndingsChanger.LineEndings.Macintosh:
+                    return "\r";
                 default:
                     return "\n";
             }

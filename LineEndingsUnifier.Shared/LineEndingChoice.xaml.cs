@@ -46,21 +46,21 @@ namespace JakubBielawa.LineEndingsUnifier
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            var button = sender as RadioButton;
+            string button = (sender as RadioButton).Content.ToString();
 
-            if (button.Content.ToString().Contains("Windows"))
+            if (button.Contains("Windows"))
             {
                 this.lineEndings = LineEndingsChanger.LineEndings.Windows;
             }
-            else if (button.Content.ToString().Contains("Linux"))
+            else if (button.Contains("Linux"))
             {
                 this.lineEndings = LineEndingsChanger.LineEndings.Linux;
             }
-            else if (button.Content.ToString().Contains("Macintosh"))
+            else if (button.Contains("Macintosh"))
             {
                 this.lineEndings = LineEndingsChanger.LineEndings.Macintosh;
             }
-            else if (button.Content.ToString().Contains("Dominant"))
+            else if (button.Contains("Dominant"))
             {
                 this.lineEndings = LineEndingsChanger.LineEndings.Dominant;
             }

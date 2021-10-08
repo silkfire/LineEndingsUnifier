@@ -32,7 +32,7 @@ namespace JakubBielawa.LineEndingsUnifier
             return false;
         }
 
-        public static IList<Project> GetAllProjects(this Solution solution)
+        public static List<Project> GetAllProjects(this Solution solution)
         {
             Projects projects = solution.Projects;
             List<Project> list = new List<Project>();
@@ -40,48 +40,40 @@ namespace JakubBielawa.LineEndingsUnifier
 
             while (item.MoveNext())
             {
-                var project = item.Current as Project;
-                if (project == null)
+                if (item.Current is Project project)
                 {
-                    continue;
-                }
-
-                if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
-                {
-                    list.AddRange(GetSolutionFolderProjects(project));
-                }
-                else
-                {
-                    list.Add(project);
+                    if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                    {
+                        AddSolutionFolderProjects(list, project);
+                    }
+                    else
+                    {
+                        list.Add(project);
+                    }
                 }
             }
 
             return list;
         }
 
-        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
+        private static void AddSolutionFolderProjects(List<Project> list, Project solutionFolder)
         {
-            List<Project> list = new List<Project>();
-
-            for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
+            var projectItems = solutionFolder.ProjectItems;
+            for (var i = 1; i <= projectItems.Count; i++)
             {
-                var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
-                if (subProject == null)
+                var subProject = projectItems.Item(i).SubProject;
+                if (subProject != null)
                 {
-                    continue;
-                }
-
-                if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
-                {
-                    list.AddRange(GetSolutionFolderProjects(subProject));
-                }
-                else
-                {
-                    list.Add(subProject);
+                    if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
+                    {
+                        AddSolutionFolderProjects(list, subProject);
+                    }
+                    else
+                    {
+                        list.Add(subProject);
+                    }
                 }
             }
-
-            return list;
         }
     }
 }
