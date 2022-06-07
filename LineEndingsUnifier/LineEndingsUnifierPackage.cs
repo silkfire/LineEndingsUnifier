@@ -1,19 +1,20 @@
-﻿using EnvDTE;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Task = System.Threading.Tasks.Task;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using EnvDTE;
+    using Microsoft.VisualStudio;
+    using Microsoft.VisualStudio.Shell;
+    using Microsoft.VisualStudio.Shell.Interop;
+
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.Design;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -37,7 +38,7 @@ namespace JakubBielawa.LineEndingsUnifier
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             var mcs = await GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
+            if (mcs != null)
             {
                 var menuCommandID = new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_File, (int)PkgCmdIDList.cmdidUnifyLineEndings_File);
                 var menuItem = new MenuCommand(new EventHandler(UnifyLineEndingsInFileEventHandler), menuCommandID);
@@ -66,7 +67,7 @@ namespace JakubBielawa.LineEndingsUnifier
 
             SetupOutputWindow();
 
-            IServiceProvider serviceProvider = new ServiceProvider(IDE as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
+            IServiceProvider serviceProvider = new ServiceProvider((Microsoft.VisualStudio.OLE.Interop.IServiceProvider)IDE);
 
             this.runningDocumentTable = new RunningDocumentTable(serviceProvider);
             this.documentSaveListener = new DocumentSaveListener(runningDocumentTable);
@@ -122,13 +123,13 @@ namespace JakubBielawa.LineEndingsUnifier
                     {
                         Output("Unifying started...\n");
                         var numberOfChanges = 0;
-                        this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
+                        //this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
                         var stopWatch = new Stopwatch();
                         stopWatch.Start();
                         UnifyLineEndingsInProjectItem(item, choiceWindow.LineEndings, ref numberOfChanges);
                         stopWatch.Stop();
                         var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
-                        this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
+                        //this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                         this.changeLog = null;
                         Output(string.Format("Done in {0} seconds\n", secondsElapsed));
                     });
@@ -151,13 +152,13 @@ namespace JakubBielawa.LineEndingsUnifier
                 {
                     Output("Unifying started...\n");
                     var numberOfChanges = 0;
-                    this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
+                    //this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
                     var stopWatch = new Stopwatch();
                     stopWatch.Start();
                     UnifyLineEndingsInProjectItems(projectItem.ProjectItems, choiceWindow.LineEndings, ref numberOfChanges);
                     stopWatch.Stop();
                     var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
-                    this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
+                    //this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                     this.changeLog = null;
                     Output(string.Format("Done in {0} seconds\n", secondsElapsed));
                 });
@@ -176,13 +177,13 @@ namespace JakubBielawa.LineEndingsUnifier
                 {
                     Output("Unifying started...\n");
                     var numberOfChanges = 0;
-                    this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
+                    //this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
                     var stopWatch = new Stopwatch();
                     stopWatch.Start();
                     UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, choiceWindow.LineEndings, ref numberOfChanges);
                     stopWatch.Stop();
                     var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
-                    this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
+                    //this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                     this.changeLog = null;
                     Output(string.Format("Done in {0} seconds\n", secondsElapsed));
                 });
@@ -204,7 +205,7 @@ namespace JakubBielawa.LineEndingsUnifier
                         System.Threading.Tasks.Task.Run(() =>
                         {
                             Output("Unifying started...\n");
-                            this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
+                            //this.changeLog = this.changesManager.GetLastChanges(this.IDE.Solution);
                             var stopWatch = new Stopwatch();
                             stopWatch.Start();
                             var numberOfChanges = 0;
@@ -214,7 +215,7 @@ namespace JakubBielawa.LineEndingsUnifier
                             }
                             stopWatch.Stop();
                             var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
-                            this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
+                            //this.changesManager.SaveLastChanges(this.IDE.Solution, this.changeLog);
                             this.changeLog = null;
                             Output(string.Format("Done in {0} seconds\n", secondsElapsed));
                         });
@@ -330,7 +331,7 @@ namespace JakubBielawa.LineEndingsUnifier
                 IVsOutputWindowPane outputWindowPane;
                 this.outputWindow.GetPane(ref this.guid, out outputWindowPane);
 
-                outputWindowPane.OutputString(message);
+                outputWindowPane.OutputStringThreadSafe(message);
             }
         }
 

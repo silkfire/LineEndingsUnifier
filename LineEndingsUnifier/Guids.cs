@@ -1,8 +1,8 @@
-﻿using System;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
-    static class GuidList
+    using System;
+
+    internal static class GuidList
     {
         public const string guidLine_Endings_UnifierPkgString = "1ce34aed-d80b-4e02-afc9-bd0bd3848443";
         public const string guidLine_Endings_UnifierCmdSetString_File = "e65fc73a-f162-437e-a8b4-b7e3469d83cb";

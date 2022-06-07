@@ -1,11 +1,4 @@
-﻿using JakubBielawa.LineEndingsUnifier;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
     public class LastChanges
     {

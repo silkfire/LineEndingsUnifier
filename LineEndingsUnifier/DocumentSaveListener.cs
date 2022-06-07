@@ -1,23 +1,17 @@
-﻿using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.TextManager.Interop;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using Microsoft.VisualStudio;
+    using Microsoft.VisualStudio.Shell;
+    using Microsoft.VisualStudio.Shell.Interop;
+
+    using System;
+
     public class DocumentSaveListener : IVsRunningDocTableEvents3, IDisposable
     {
         public DocumentSaveListener(RunningDocumentTable docTable)
         {
-            runningDocumentTable = docTable;
-            cookie = runningDocumentTable.Advise(this);
+            _runningDocumentTable = docTable;
+            _cookie = _runningDocumentTable.Advise(this);
         }
 
         public int OnAfterFirstDocumentLock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
@@ -67,15 +61,15 @@ namespace JakubBielawa.LineEndingsUnifier
 
         public void Dispose()
         {
-            runningDocumentTable.Unadvise(cookie);
+            _runningDocumentTable.Unadvise(_cookie);
         }
 
         public event OnBeforeSaveHandler BeforeSave;
 
         public delegate int OnBeforeSaveHandler(uint docCookie);
 
-        private RunningDocumentTable runningDocumentTable;
+        private readonly RunningDocumentTable _runningDocumentTable;
 
-        private uint cookie;
+        private readonly uint _cookie;
     }
 }

@@ -1,12 +1,10 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using System.Windows;
+    using System.Windows.Controls;
+
     public partial class LineEndingChoice : Window
     {
-        private LineEndingsChanger.LineEndings lineEndings = LineEndingsChanger.LineEndings.None;
-
         public LineEndingChoice()
         {
             InitializeComponent();
@@ -36,13 +34,7 @@ namespace JakubBielawa.LineEndingsUnifier
             }
         }
 
-        public LineEndingsChanger.LineEndings LineEndings
-        {
-            get
-            {
-                return lineEndings;
-            }
-        }
+        public LineEndingsChanger.LineEndings LineEndings { get; private set; } = LineEndingsChanger.LineEndings.None;
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
@@ -50,23 +42,23 @@ namespace JakubBielawa.LineEndingsUnifier
 
             if (button.Content.ToString().Contains("Windows"))
             {
-                this.lineEndings = LineEndingsChanger.LineEndings.Windows;
+                this.LineEndings = LineEndingsChanger.LineEndings.Windows;
             }
             else if (button.Content.ToString().Contains("Linux"))
             {
-                this.lineEndings = LineEndingsChanger.LineEndings.Linux;
+                this.LineEndings = LineEndingsChanger.LineEndings.Linux;
             }
             else if (button.Content.ToString().Contains("Macintosh"))
             {
-                this.lineEndings = LineEndingsChanger.LineEndings.Macintosh;
+                this.LineEndings = LineEndingsChanger.LineEndings.Macintosh;
             }
             else if (button.Content.ToString().Contains("Dominant"))
             {
-                this.lineEndings = LineEndingsChanger.LineEndings.Dominant;
+                this.LineEndings = LineEndingsChanger.LineEndings.Dominant;
             }
             else
             {
-                this.lineEndings = LineEndingsChanger.LineEndings.None;
+                this.LineEndings = LineEndingsChanger.LineEndings.None;
             }
         }
 
@@ -78,7 +70,7 @@ namespace JakubBielawa.LineEndingsUnifier
 
         private void Cancel_Button_Click(object sender, RoutedEventArgs e)
         {
-            this.lineEndings = LineEndingsChanger.LineEndings.None;
+            this.LineEndings = LineEndingsChanger.LineEndings.None;
             this.DialogResult = false;
             this.Close();
         }

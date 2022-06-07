@@ -1,12 +1,13 @@
-﻿using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
-using System.ComponentModel;
-using System.IO;
-using System.Runtime.InteropServices;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using EnvDTE;
+    using EnvDTE80;
+    using Microsoft.VisualStudio.Shell;
+
+    using System.ComponentModel;
+    using System.IO;
+    using System.Runtime.InteropServices;
+
     [ClassInterface(ClassInterfaceType.AutoDual)]
     public class OptionsPage : DialogPage
     {

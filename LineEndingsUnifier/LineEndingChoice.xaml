@@ -1,4 +1,4 @@
-﻿<Window x:Class="JakubBielawa.LineEndingsUnifier.LineEndingChoice"
+﻿<Window x:Class="LineEndingsUnifier.LineEndingChoice"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="LineEndingChoice" Height="210" Width="300" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">

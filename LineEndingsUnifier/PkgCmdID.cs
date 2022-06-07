@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
-    static class PkgCmdIDList
+    internal static class PkgCmdIDList
     {
         public const uint cmdidUnifyLineEndings_File = 0x100;
         public const uint cmdidUnifyLineEndings_Folder = 0x101;

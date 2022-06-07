@@ -1,9 +1,7 @@
-﻿using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using System.Text.RegularExpressions;
+
     public static class LineEndingsChanger
     {
         public enum LineEndings

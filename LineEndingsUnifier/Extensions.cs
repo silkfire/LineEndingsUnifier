@@ -1,10 +1,10 @@
-﻿using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
-using System.Collections.Generic;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using EnvDTE;
+    using EnvDTE80;
+
+    using System.Collections.Generic;
+
     public static class Extensions
     {
         public static bool EndsWithAny(this string str, string[] strings)

@@ -1,11 +1,12 @@
-﻿using EnvDTE;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Xml;
-
-namespace JakubBielawa.LineEndingsUnifier
+﻿namespace LineEndingsUnifier
 {
+    using EnvDTE;
+
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Xml;
+
     public class ChangesManager
     {
         public Dictionary<string, LastChanges> GetLastChanges(Solution solution)
