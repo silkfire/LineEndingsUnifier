@@ -2,14 +2,14 @@
 {
     public class LastChanges
     {
-        public LastChanges(long ticks, LineEndingsChanger.LineEndings lineEndings)
+        public LastChanges(long ticks, LineEndingsChanger.LineEnding lineEnding)
         {
             Ticks = ticks;
-            LineEndings = lineEndings;
+            LineEnding = lineEnding;
         }
 
         public long Ticks { get; }
 
-        public LineEndingsChanger.LineEndings LineEndings { get; }
+        public LineEndingsChanger.LineEnding LineEnding { get; }
     }
 }

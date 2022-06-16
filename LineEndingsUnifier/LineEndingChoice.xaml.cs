@@ -3,76 +3,69 @@
     using System.Windows;
     using System.Windows.Controls;
 
-    public partial class LineEndingChoice : Window
+    public partial class LineEndingChoice
     {
-        public LineEndingChoice()
+        public LineEndingChoice(string windowTitle, LineEndingsChanger.LineEnding defaultLineEnding)
         {
             InitializeComponent();
-        }
-
-        public LineEndingChoice(string fileName, LineEndingsChanger.LineEndings defaultLineEnding)
-        {
-            InitializeComponent();
-            this.Title = fileName;
+            Title = windowTitle;
 
             switch (defaultLineEnding)
             {
-                case LineEndingsChanger.LineEndings.Dominant:
-                    this.Dominant_RadioButton.IsChecked = true;
+                case LineEndingsChanger.LineEnding.Windows:
+                    Windows_RadioButton.IsChecked = true;
                     break;
-                case LineEndingsChanger.LineEndings.Linux:
-                    this.Linux_RadioButton.IsChecked = true;
+                case LineEndingsChanger.LineEnding.Linux:
+                    Linux_RadioButton.IsChecked = true;
                     break;
-                case LineEndingsChanger.LineEndings.Macintosh:
-                    this.Macintosh_RadioButton.IsChecked = true;
+                case LineEndingsChanger.LineEnding.Macintosh:
+                    Macintosh_RadioButton.IsChecked = true;
                     break;
-                case LineEndingsChanger.LineEndings.Windows:
-                    this.Windows_RadioButton.IsChecked = true;
-                    break;
-                default:
+                case LineEndingsChanger.LineEnding.Dominant:
+                    Dominant_RadioButton.IsChecked = true;
                     break;
             }
         }
 
-        public LineEndingsChanger.LineEndings LineEndings { get; private set; } = LineEndingsChanger.LineEndings.None;
+        public LineEndingsChanger.LineEnding LineEnding { get; private set; } = LineEndingsChanger.LineEnding.None;
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            var button = sender as RadioButton;
+            var buttonContent = (sender as RadioButton).Content.ToString();
 
-            if (button.Content.ToString().Contains("Windows"))
+            if (buttonContent.StartsWith("Windows"))
             {
-                this.LineEndings = LineEndingsChanger.LineEndings.Windows;
+                LineEnding = LineEndingsChanger.LineEnding.Windows;
             }
-            else if (button.Content.ToString().Contains("Linux"))
+            else if (buttonContent.StartsWith("Linux"))
             {
-                this.LineEndings = LineEndingsChanger.LineEndings.Linux;
+                LineEnding = LineEndingsChanger.LineEnding.Linux;
             }
-            else if (button.Content.ToString().Contains("Macintosh"))
+            else if (buttonContent.StartsWith("Macintosh"))
             {
-                this.LineEndings = LineEndingsChanger.LineEndings.Macintosh;
+                LineEnding = LineEndingsChanger.LineEnding.Macintosh;
             }
-            else if (button.Content.ToString().Contains("Dominant"))
+            else if (buttonContent.StartsWith("Dominant"))
             {
-                this.LineEndings = LineEndingsChanger.LineEndings.Dominant;
+                LineEnding = LineEndingsChanger.LineEnding.Dominant;
             }
             else
             {
-                this.LineEndings = LineEndingsChanger.LineEndings.None;
+                LineEnding = LineEndingsChanger.LineEnding.None;
             }
         }
 
         private void Change_Button_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = true;
-            this.Close();
+            DialogResult = true;
+            Close();
         }
 
         private void Cancel_Button_Click(object sender, RoutedEventArgs e)
         {
-            this.LineEndings = LineEndingsChanger.LineEndings.None;
-            this.DialogResult = false;
-            this.Close();
+            LineEnding = LineEndingsChanger.LineEnding.None;
+            DialogResult = false;
+            Close();
         }
     }
 }

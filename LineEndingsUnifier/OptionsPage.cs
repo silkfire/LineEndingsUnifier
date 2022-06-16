@@ -11,121 +11,82 @@
     [ClassInterface(ClassInterfaceType.AutoDual)]
     public class OptionsPage : DialogPage
     {
-        private LineEndingsChanger.LineEndingsList defaultLineEnding = LineEndingsChanger.LineEndingsList.Windows;
-        private bool forceDefaultLineEndingOnSave = false;
-        private string supportedFileFormats = ".cpp; .c; .h; .hpp; .cs; .js; .vb; .txt";
-        private string supportedFileNames = "Dockerfile";
-        private bool saveFilesAfterUnifying = false;
-        private bool writeReport = false;
-        private bool unifyOnlyOpenFiles = false;
-        private bool addNewlineOnLastLine = false;
-        private bool trackChanges = false;
-        private bool removeTrailingWhitespace = false;
+        private const string Category = "Line Endings Unifier";
 
-        [Category("Line Endings Unifier")]
+        public const string ChangeLogFileExtension = "leu";
+
+        private bool _trackChanges;
+
+        [Category(Category)]
         [DisplayName("Default Line Ending")]
         [Description("The default line ending")]
-        public LineEndingsChanger.LineEndingsList DefaultLineEnding
-        {
-            get { return defaultLineEnding; }
-            set { defaultLineEnding = value; }
-        }
+        public LineEndingsChanger.LineEndingList DefaultLineEnding { get; set; } = LineEndingsChanger.LineEndingList.Windows;
 
-        [Category("Line Endings Unifier")]
-        [DisplayName("Force Default Line Ending On Document Save")]
+        [Category(Category)]
+        [DisplayName("Force Default Line Ending on Document Save")]
         [Description("Determines if line endings have to be unified automatically on a document save")]
-        public bool ForceDefaultLineEndingOnSave
-        {
-            get { return forceDefaultLineEndingOnSave; }
-            set { forceDefaultLineEndingOnSave = value; }
-        }
+        public bool ForceDefaultLineEndingOnSave { get; set; }
 
-        [Category("Line Endings Unifier")]
+        [Category(Category)]
         [DisplayName("Supported File Formats")]
         [Description("Files with these formats will have line endings unified")]
-        public string SupportedFileFormats
-        {
-            get { return supportedFileFormats; }
-            set { supportedFileFormats = value; }
-        }
+        public string SupportedFileFormats { get; set; } = ".cpp; .c; .h; .hpp; .cs; .js; .vb; .txt";
 
-        [Category("Line Endings Unifier")]
+        [Category(Category)]
         [DisplayName("Supported File Names")]
         [Description("Files with these names will have line endings unified")]
-        public string SupportedFileNames
-        {
-            get { return supportedFileNames; }
-            set { supportedFileNames = value; }
-        }
+        public string SupportedFileNames { get; set; } = "Dockerfile";
 
-        [Category("Line Endings Unifier")]
+        [Category(Category)]
         [DisplayName("Save Files After Unifying")]
         [Description("When you click \"Unify Line Endings In This...\" button, changed files won't be saved. Set this to TRUE if you want them to be automatically saved.")]
-        public bool SaveFilesAfterUnifying
-        {
-            get { return saveFilesAfterUnifying; }
-            set { saveFilesAfterUnifying = value; }
-        }
+        public bool SaveFilesAfterUnifying { get; set; }
 
-        [Category("Line Endings Unifier")]
-        [DisplayName("Write Report To The Output Window")]
+        [Category(Category)]
+        [DisplayName("Write Report to the Output Window")]
         [Description("Set this to TRUE if you want the extension to write a report in the Output window")]
-        public bool WriteReport
-        {
-            get { return writeReport; }
-            set { writeReport = value; }
-        }
+        public bool WriteReport { get; set; }
 
-        [Category("Line Endings Unifier")]
-        [DisplayName("Unify Only Open Files On Save All")]
+        [Category(Category)]
+        [DisplayName("Unify Only Open Files on Save All")]
         [Description("Set this to TRUE if you want the extension to unify only files that are open in the editor after hitting \"Save All\"")]
-        public bool UnifyOnlyOpenFiles
-        {
-            get { return unifyOnlyOpenFiles; }
-            set { unifyOnlyOpenFiles = value; }
-        }
+        public bool UnifyOnlyOpenFiles { get; set; }
 
-        [Category("Line Endings Unifier")]
-        [DisplayName("Add Newline On The Last Line")]
+        [Category(Category)]
+        [DisplayName("Add Newline on the Last Line")]
         [Description("Set this to TRUE if you want the extension to add a newline character on the last line when unifying line endings")]
-        public bool AddNewlineOnLastLine
-        {
-            get { return addNewlineOnLastLine; }
-            set { addNewlineOnLastLine = value; }
-        }
+        public bool AddNewlineOnLastLine { get; set; }
 
-        [Category("Line Endings Unifier")]
+        [Category(Category)]
         [DisplayName("Track Changes")]
         [Description("Set this to TRUE if you want the extension to remember when files were unified to improve performance")]
         public bool TrackChanges
         {
-            get { return trackChanges; }
+            get => _trackChanges;
             set
             {
-                if (value == false)
+                ThreadHelper.ThrowIfNotOnUIThread();
+
+                if (!value)
                 {
-                    DTE2 ide = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE2;
-                    if (!ide.Solution.FullName.Equals(string.Empty))
+                    if (ServiceProvider.GlobalProvider.GetService(typeof(DTE)) is DTE2 ide)
                     {
-                        var path = Path.GetDirectoryName(ide.Solution.FullName) + "\\.leu";
-                        if (File.Exists(path))
+                        if (ide.Solution.FullName != "")
                         {
-                            File.Delete(path);
+                            var path = $"{Path.GetDirectoryName(ide.Solution.FullName)}.{ChangeLogFileExtension}";
+
+                            if (File.Exists(path)) File.Delete(path);
                         }
                     }
                 }
 
-                trackChanges = value;
+                _trackChanges = value;
             }
         }
 
-        [Category("Line Endings Unifier")]
+        [Category(Category)]
         [DisplayName("Remove Trailing Whitespace")]
         [Description("Set this to TRUE if you want the extension to remove trailing whitespace characters while unifying newline characters")]
-        public bool RemoveTrailingWhitespace
-        {
-            get { return removeTrailingWhitespace; }
-            set { removeTrailingWhitespace = value; }
-        }
+        public bool RemoveTrailingWhitespace { get; set; }
     }
 }

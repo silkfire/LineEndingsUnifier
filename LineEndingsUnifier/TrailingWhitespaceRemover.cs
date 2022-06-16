@@ -14,6 +14,7 @@
             {
                 stringBuilder.AppendLine(lines[i].TrimEnd());
             }
+
             stringBuilder.Append(lines[lines.Length - 1].TrimEnd());
 
             return stringBuilder.ToString();

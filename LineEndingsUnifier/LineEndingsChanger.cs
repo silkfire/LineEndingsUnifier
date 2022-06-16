@@ -4,7 +4,7 @@
 
     public static class LineEndingsChanger
     {
-        public enum LineEndings
+        public enum LineEnding
         {
             Windows,
             Linux,
@@ -13,7 +13,7 @@
             None
         }
 
-        public enum LineEndingsList
+        public enum LineEndingList
         {
             Windows,
             Linux,
@@ -21,60 +21,60 @@
             Dominant
         }
 
-        private const string LineEndingsPattern = "\r\n?|\n";
+        private const string LineEndingPattern = "\r\n?|\n";
 
-        private const string WindowsLineEndings = "\r\n";
+        private const string WindowsLineEnding = "\r\n";
 
-        private const string LinuxLineEndings = "\n";
+        private const string LinuxLineEnding = "\n";
 
-        private const string MacintoshLineEndings = "\r";
+        private const string MacintoshLineEnding = "\r";
 
-        public static string ChangeLineEndings(string text, LineEndings lineEndings, ref int numberOfChanges, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
+        public static string ChangeLineEndings(string text, LineEnding lineEnding, ref int numberOfChanges, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
         {
             numberOfIndividualChanges = 0;
 
-            string replacementString = string.Empty;
+            var replacementString = string.Empty;
 
-            numberOfAllLineEndings = Regex.Matches(text, LineEndingsPattern).Count;
-            var numberOfWindowsLineEndings = Regex.Matches(text, WindowsLineEndings).Count;
-            var numberOfLinuxLineEndings = Regex.Matches(text, LinuxLineEndings).Count - numberOfWindowsLineEndings;
-            var numberOfMacintoshLineEndings = Regex.Matches(text, MacintoshLineEndings).Count - numberOfWindowsLineEndings;
+            numberOfAllLineEndings = Regex.Matches(text, LineEndingPattern).Count;
+            var numberOfWindowsLineEndings = Regex.Matches(text, WindowsLineEnding).Count;
+            var numberOfLinuxLineEndings = Regex.Matches(text, LinuxLineEnding).Count - numberOfWindowsLineEndings;
+            var numberOfMacintoshLineEndings = Regex.Matches(text, MacintoshLineEnding).Count - numberOfWindowsLineEndings;
 
-            switch (lineEndings)
+            switch (lineEnding)
             {
-                case LineEndings.Linux:
-                    replacementString = LinuxLineEndings;
+                case LineEnding.Linux:
+                    replacementString = LinuxLineEnding;
                     numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
                     break;
-                case LineEndings.Windows:
-                    replacementString = WindowsLineEndings;
+                case LineEnding.Windows:
+                    replacementString = WindowsLineEnding;
                     numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
                     break;
-                case LineEndings.Macintosh:
-                    replacementString = MacintoshLineEndings;
+                case LineEnding.Macintosh:
+                    replacementString = MacintoshLineEnding;
                     numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
                     break;
-                case LineEndings.Dominant:
+                case LineEnding.Dominant:
                     if (numberOfWindowsLineEndings > numberOfLinuxLineEndings && numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
                     {
-                        replacementString = WindowsLineEndings;
+                        replacementString = WindowsLineEnding;
                         numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
                     }
                     else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings && numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
                     {
-                        replacementString = LinuxLineEndings;
+                        replacementString = LinuxLineEnding;
                         numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
                     }
                     else
                     {
-                        replacementString = MacintoshLineEndings;
+                        replacementString = MacintoshLineEnding;
                         numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
                     }
 
                     break;
             }
 
-            string modifiedText = Regex.Replace(text, LineEndingsPattern, replacementString);
+            var modifiedText = Regex.Replace(text, LineEndingPattern, replacementString);
 
             numberOfChanges += numberOfIndividualChanges;
 

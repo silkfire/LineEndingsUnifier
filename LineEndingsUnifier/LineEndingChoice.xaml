@@ -1,22 +1,24 @@
 ﻿<Window x:Class="LineEndingsUnifier.LineEndingChoice"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="LineEndingChoice" Height="210" Width="300" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+        Title="LineEndingChoice" SizeToContent="Height" Width="370" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
     <Grid>
-        <StackPanel Orientation="Vertical">
-            <TextBlock Text="Choose line endings to insert:" Margin="10,10,0,0"/>
-            <Grid>
-                <StackPanel Orientation="Vertical">
-                    <RadioButton Name="Windows_RadioButton" Content="Windows (CR LF)" Checked="RadioButton_Checked" Margin="10,10,0,0"/>
-                    <RadioButton Name="Linux_RadioButton" Content="Linux (LF)" Checked="RadioButton_Checked" Margin="10,5,0,0"/>
-                    <RadioButton Name="Macintosh_RadioButton" Content="Macintosh (CR)" Checked="RadioButton_Checked" Margin="10,5,0,0"/>
-                    <RadioButton Name="Dominant_RadioButton" Content="Dominant" Checked="RadioButton_Checked" Margin="10,5,0,0"/>
-                </StackPanel>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <Button Name="Change_Button" Margin="90,10,10,10" Width="80" Height="30" Content="OK" Click="Change_Button_Click"/>
-                <Button Name="Cancel_Button" Margin="10,10,10,10" Width="80" Height="30" Content="Cancel" Click="Cancel_Button_Click"/>
-            </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Select line ending sequence:" FontWeight="Bold" Margin="10,10,0,5"/>
+
+            <RadioButton Name="Windows_RadioButton" Content="Windows (CR LF)" Checked="RadioButton_Checked" Margin="10,10,0,0"/>
+            <RadioButton Name="Linux_RadioButton" Content="Linux (LF)" Checked="RadioButton_Checked" Margin="10,7,0,0"/>
+            <RadioButton Name="Macintosh_RadioButton" Content="Macintosh (CR)" Checked="RadioButton_Checked" Margin="10,7,0,0"/>
+            <RadioButton Name="Dominant_RadioButton" Content="Dominant" Checked="RadioButton_Checked" Margin="10,7,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,30,0,5">
+            <Button Name="Change_Button" Margin="0,0,20,10" Width="80" Height="30" Content="OK" Click="Change_Button_Click"/>
+            <Button Name="Cancel_Button" Margin="0,0,0,10" Width="80" Height="30" Content="Cancel" Click="Cancel_Button_Click"/>
         </StackPanel>
     </Grid>
 </Window>

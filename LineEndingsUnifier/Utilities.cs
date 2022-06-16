@@ -2,15 +2,15 @@
 {
     public static class Utilities
     {
-        public static string GetNewlineString(LineEndingsChanger.LineEndings lineEnding)
+        public static string GetNewlineString(LineEndingsChanger.LineEnding lineEnding)
         {
             switch (lineEnding)
             {
-                case LineEndingsChanger.LineEndings.Macintosh:
+                case LineEndingsChanger.LineEnding.Macintosh:
                     return "\r";
-                case LineEndingsChanger.LineEndings.Windows:
+                case LineEndingsChanger.LineEnding.Windows:
                     return "\r\n";
-                case LineEndingsChanger.LineEndings.Linux:
+                case LineEndingsChanger.LineEnding.Linux:
                 default:
                     return "\n";
             }

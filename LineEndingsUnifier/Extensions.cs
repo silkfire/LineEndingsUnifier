@@ -2,44 +2,26 @@
 {
     using EnvDTE;
     using EnvDTE80;
+    using Microsoft.VisualStudio.Shell;
 
     using System.Collections.Generic;
+    using System.Linq;
 
     public static class Extensions
     {
-        public static bool EndsWithAny(this string str, string[] strings)
-        {
-            foreach (var s in strings)
-            {
-                if (str.EndsWith(s))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public static bool EqualsAny(this string str, string[] strings) => strings.Contains(str);
 
-        public static bool EqualsAny(this string str, string[] strings)
-        {
-            foreach (var s in strings)
-            {
-                if (str.Equals(s))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public static bool EndsWithAny(this string str, string[] strings) => strings.Any(str.EndsWith);
 
-        public static IList<Project> GetAllProjects(this Solution solution)
-        {
-            Projects projects = solution.Projects;
-            List<Project> list = new List<Project>();
-            var item = projects.GetEnumerator();
 
-            while (item.MoveNext())
+        public static IReadOnlyList<Project> GetAllProjects(this Solution solution)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var projects = new List<Project>();
+
+            foreach (Project project in solution.Projects)
             {
-                var project = item.Current as Project;
                 if (project == null)
                 {
                     continue;
@@ -47,24 +29,27 @@
 
                 if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder)
                 {
-                    list.AddRange(GetSolutionFolderProjects(project));
+                    projects.AddRange(GetSolutionFolderProjects(project));
                 }
                 else
                 {
-                    list.Add(project);
+                    projects.Add(project);
                 }
             }
 
-            return list;
+            return projects.AsReadOnly();
         }
 
         private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
         {
-            List<Project> list = new List<Project>();
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var projects = new List<Project>();
 
             for (var i = 1; i <= solutionFolder.ProjectItems.Count; i++)
             {
                 var subProject = solutionFolder.ProjectItems.Item(i).SubProject;
+
                 if (subProject == null)
                 {
                     continue;
@@ -72,15 +57,15 @@
 
                 if (subProject.Kind == ProjectKinds.vsProjectKindSolutionFolder)
                 {
-                    list.AddRange(GetSolutionFolderProjects(subProject));
+                    projects.AddRange(GetSolutionFolderProjects(subProject));
                 }
                 else
                 {
-                    list.Add(subProject);
+                    projects.Add(subProject);
                 }
             }
 
-            return list;
+            return projects;
         }
     }
 }
