@@ -31,7 +31,7 @@
         <Parent guid="guidLine_Endings_UnifierCmdSet_Solution" id="MenuGroup_Solution" />
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Unify Line Endings in This Solution</ButtonText>
+          <ButtonText>Unify Line Endings in This Solution...</ButtonText>
         </Strings>
       </Button>
 
@@ -39,7 +39,7 @@
         <Parent guid="guidLine_Endings_UnifierCmdSet_Folder" id="MenuGroup_Folder" />
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Unify Line Endings in This Folder</ButtonText>
+          <ButtonText>Unify Line Endings in This Folder...</ButtonText>
         </Strings>
       </Button>
 
@@ -47,7 +47,7 @@
         <Parent guid="guidLine_Endings_UnifierCmdSet_Project" id="MenuGroup_Project" />
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Unify Line Endings in This Project</ButtonText>
+          <ButtonText>Unify Line Endings in This Project...</ButtonText>
         </Strings>
       </Button>
 
@@ -55,7 +55,7 @@
         <Parent guid="guidLine_Endings_UnifierCmdSet_File" id="MenuGroup_File" />
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Unify Line Endings in This File</ButtonText>
+          <ButtonText>Unify Line Endings in This File...</ButtonText>
         </Strings>
       </Button>
     </Buttons>
