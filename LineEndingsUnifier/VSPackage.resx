@@ -129,10 +129,10 @@
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="110" xml:space="preserve">
-    <value>LineEndingsUnifierPackage Extension</value>
+    <value>Line Endings Unifier</value>
   </data>
   <data name="112" xml:space="preserve">
-    <value>LineEndingsUnifierPackage Visual Studio Extension Detailed Info</value>
+    <value>Unify line endings in a whole solution, a specific project, a chosen folder or a certain source file by right clicking on a solution, a project or a file in the Solution Explorer.</value>
   </data>
   <data name="400" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\Package.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

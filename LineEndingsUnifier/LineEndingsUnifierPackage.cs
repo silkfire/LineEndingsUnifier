@@ -16,7 +16,7 @@
     using System.Threading.Tasks;
 
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", "2.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(GuidList.guidLine_Endings_UnifierPkgString)]
     [ProvideOptionPage(typeof(OptionsPage), "Line Endings Unifier", "General Settings", 0, 0, true)]
