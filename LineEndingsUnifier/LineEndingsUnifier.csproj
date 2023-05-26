@@ -93,8 +93,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\Command1.png" />
-    <Content Include="Resources\LineEndingsUnifierPackage.ico" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="LineEndingsUnifier.vsct">
@@ -117,12 +115,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.SDK">
-      <Version>17.3.32804.24</Version>
+      <Version>17.6.36389</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools">
-      <Version>17.3.2093</Version>
+      <Version>17.6.2164</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Resources.Extensions">
+      <Version>7.0.0</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
