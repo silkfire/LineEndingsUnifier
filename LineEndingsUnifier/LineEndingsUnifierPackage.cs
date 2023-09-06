@@ -49,40 +49,27 @@
 
         private OptionsPage OptionsPage => _optionsPage ?? (_optionsPage = GetDialogPage(typeof(OptionsPage)) as OptionsPage);
 
-        public DTE2 Ide
-        {
-            get
-            {
-                ThreadHelper.ThrowIfNotOnUIThread();
-
-                return _ide ?? (_ide = GetService(typeof(DTE)) as DTE2);
-            }
-        }
-
         private LineEndingsChanger.LineEnding DefaultLineEnding => (LineEndingsChanger.LineEnding)OptionsPage.DefaultLineEnding;
-
-        private string[] SupportedFileFormats
-        {
-            get { return OptionsPage.SupportedFileFormats.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries); }
-        }
-
-        private string[] SupportedFileNames
-        {
-            get { return OptionsPage.SupportedFileNames.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries); }
-        }
-
-
 
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             // runs in the background thread and doesn't affect the responsiveness of the UI thread.
-            await Task.Delay(5000, cancellationToken);
+            await Task.Delay(5_000, cancellationToken);
 
             await base.InitializeAsync(cancellationToken, progress);
 
             // Switches to the UI thread in order to consume some services used in command initialization
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            if (await GetServiceAsync(typeof(DTE)) is DTE2 dte)
+            {
+                _ide = dte;
+            }
+            else
+            {
+                throw new COMException($"Unable to resolve service {nameof(DTE2)}");
+            }
 
             if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService mcs)
             {
@@ -103,10 +90,18 @@
                     });
                 }
 
-                SetupOutputWindow();
+                if (await GetServiceAsync(typeof(SVsOutputWindow)) is IVsOutputWindow outputWindow)
+                {
+                    _outputWindow = outputWindow;
+                    _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
+                }
+                else
+                {
+                    throw new COMException($"Unable to resolve service {nameof(IVsOutputWindow)}");
+                }
 
                 // ReSharper disable once SuspiciousTypeConversion.Global
-                IServiceProvider serviceProvider = new ServiceProvider((Microsoft.VisualStudio.OLE.Interop.IServiceProvider)Ide);
+                IServiceProvider serviceProvider = new ServiceProvider(_ide as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
 
                 _runningDocumentTable = new RunningDocumentTable(serviceProvider);
                 _documentSaveListener = new DocumentSaveListener(_runningDocumentTable);
@@ -115,7 +110,7 @@
             }
             else
             {
-                throw new COMException($"Unable to resolve service {nameof(IMenuCommandService)}.");
+                throw new COMException($"Unable to resolve service {nameof(IMenuCommandService)}");
             }
         }
 
@@ -123,19 +118,14 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var document = GetDocumentFromDocCookie(docCookie);
-
             if (!_isUnifyingLocked)
             {
                 if (OptionsPage.ForceDefaultLineEndingOnSave)
                 {
-                    var currentDocument = document;
+                    var currentDocument = GetDocumentFromDocCookie(docCookie);
                     var textDocument = currentDocument.Object("TextDocument") as TextDocument;
 
-                    var supportedFileFormats = SupportedFileFormats;
-                    var supportedFileNames = SupportedFileNames;
-
-                    if (currentDocument.Name.EndsWithAny(supportedFileFormats) || currentDocument.Name.EqualsAny(supportedFileNames))
+                    if (DocumentMatchesConfiguredFileFormatsOrFilenames(currentDocument.Name))
                     {
                         Output($"{LogStrings.UnifyingStarted}\n");
                         var numberOfChanges = 0;
@@ -154,7 +144,7 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var currentSolution = Ide.Solution;
+            var currentSolution = _ide.Solution;
 
             string solutionName = null;
             foreach (Property property in currentSolution.Properties)
@@ -189,7 +179,7 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var selectedFolder = Ide.SelectedItems.Item(1).ProjectItem;
+            var selectedFolder = _ide.SelectedItems.Item(1).ProjectItem;
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFolder.Name, UnifyOperation);
 
@@ -207,7 +197,7 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var selectedProject = Ide.SelectedItems.Item(1).Project;
+            var selectedProject = _ide.SelectedItems.Item(1).Project;
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedProject.Name, UnifyOperation);
 
@@ -225,9 +215,9 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var selectedFile = Ide.SelectedItems.Item(1).ProjectItem;
+            var selectedFile = _ide.SelectedItems.Item(1).ProjectItem;
 
-            UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFile.Name, UnifyOperation, selectedFile.Name.EndsWithAny(SupportedFileFormats) || selectedFile.Name.EqualsAny(SupportedFileNames));
+            UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFile.Name, UnifyOperation, DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name));
 
             int UnifyOperation(LineEndingsChanger.LineEnding lineEndings)
             {
@@ -254,7 +244,7 @@
 
                         Output($"{LogStrings.UnifyingStarted}\n");
 
-                        if (OptionsPage.TrackChanges) _changeLog = _changesManager.GetLastChanges(Ide.Solution);
+                        if (OptionsPage.TrackChanges) _changeLog = _changesManager.GetLastChanges(_ide.Solution);
 
                         var stopWatch = new Stopwatch();
                         stopWatch.Start();
@@ -262,7 +252,7 @@
                         stopWatch.Stop();
                         var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
 
-                        if (OptionsPage.TrackChanges) _changesManager.SaveLastChanges(Ide.Solution, _changeLog);
+                        if (OptionsPage.TrackChanges) _changesManager.SaveLastChanges(_ide.Solution, _changeLog);
 
                         _changeLog = null;
                         Output($"{string.Format(LogStrings.DoneTemplate, secondsElapsed)}\n");
@@ -276,9 +266,6 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var supportedFileFormats = SupportedFileFormats;
-            var supportedFileNames = SupportedFileNames;
-
             foreach (ProjectItem item in projectItems)
             {
                 if (item.ProjectItems != null && item.ProjectItems.Count > 0)
@@ -286,7 +273,7 @@
                     UnifyLineEndingsInProjectItems(item.ProjectItems, lineEnding, ref numberOfChanges);
                 }
 
-                if (item.Name.EndsWithAny(supportedFileFormats) || item.Name.EqualsAny(supportedFileNames))
+                if (DocumentMatchesConfiguredFileFormatsOrFilenames(item.Name))
                 {
                     UnifyLineEndingsInProjectItem(item, lineEnding, ref numberOfChanges);
                 }
@@ -366,20 +353,6 @@
             startPoint.ReplaceText(originalLength, changedText, (int)vsEPReplaceTextOptions.vsEPReplaceTextKeepMarkers);
         }
 
-        private void SetupOutputWindow()
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            var outputWindowService = ServiceProvider.GlobalProvider.GetService(typeof(SVsOutputWindow));
-
-            if (outputWindowService == null) throw new COMException($"Unable to resolve service {nameof(SVsOutputWindow)}.");
-
-            if (!(outputWindowService is IVsOutputWindow outputWindow)) throw new InvalidCastException($"Unable to cast object of type '{nameof(Microsoft)}{nameof(Microsoft.VisualStudio)}{nameof(Microsoft.VisualStudio.Shell)}{nameof(Microsoft.VisualStudio.Shell.Interop)}{nameof(SVsOutputWindow)}' to type '{nameof(Microsoft)}{nameof(Microsoft.VisualStudio)}{nameof(Microsoft.VisualStudio.Shell)}{nameof(Microsoft.VisualStudio.Shell.Interop)}{nameof(IVsOutputWindow)}'.");
-
-            _outputWindow = outputWindow;
-            _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
-        }
-
         private void Output(string message)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -397,12 +370,15 @@
 
             var documentInfoMoniker = _runningDocumentTable.GetDocumentInfo(docCookie).Moniker;
 
-            foreach (Document document in Ide.Documents)
+            var documents = _ide.Documents;
+            foreach (Document document in documents)
             {
                 if (document.FullName == documentInfoMoniker) return document;
             }
 
             return null;
         }
+
+        private bool DocumentMatchesConfiguredFileFormatsOrFilenames(string filename) => filename.EndsWithAny(OptionsPage.SupportedFileFormatsArray) || filename.EqualsAny(OptionsPage.SupportedFilenamesArray);
     }
 }
