@@ -6,8 +6,15 @@
 
     using System;
 
-    public class DocumentSaveListener : IVsRunningDocTableEvents3, IDisposable
+    internal class DocumentSaveListener : IVsRunningDocTableEvents3, IDisposable
     {
+        public event OnBeforeSaveHandler BeforeSave;
+
+        public delegate int OnBeforeSaveHandler(uint docCookie);
+
+        private readonly RunningDocumentTable _runningDocumentTable;
+        private readonly uint _cookie;
+
         public DocumentSaveListener(RunningDocumentTable docTable)
         {
             _runningDocumentTable = docTable;
@@ -63,13 +70,5 @@
         {
             _runningDocumentTable.Unadvise(_cookie);
         }
-
-        public event OnBeforeSaveHandler BeforeSave;
-
-        public delegate int OnBeforeSaveHandler(uint docCookie);
-
-        private readonly RunningDocumentTable _runningDocumentTable;
-
-        private readonly uint _cookie;
     }
 }

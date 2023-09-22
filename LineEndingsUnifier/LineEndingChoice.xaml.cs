@@ -3,7 +3,7 @@
     using System.Windows;
     using System.Windows.Controls;
 
-    public partial class LineEndingChoice
+    internal partial class LineEndingChoice
     {
         public LineEndingChoice(string windowTitle, LineEndingsChanger.LineEnding defaultLineEnding)
         {

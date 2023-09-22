@@ -1,16 +1,24 @@
 ﻿namespace LineEndingsUnifier
 {
+    using static LineEndingsChanger;
+
     using EnvDTE;
     using EnvDTE80;
     using Microsoft.VisualStudio;
+    using Microsoft.VisualStudio.ComponentModelHost;
+    using Microsoft.VisualStudio.Editor;
     using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.Shell.Interop;
+    using Microsoft.VisualStudio.Text;
+    using Microsoft.VisualStudio.Text.Operations;
+    using Microsoft.VisualStudio.TextManager.Interop;
 
     using System;
     using System.Collections.Generic;
     using System.ComponentModel.Design;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -40,16 +48,20 @@
         private bool _isUnifyingLocked;
         private Dictionary<string, LastChanges> _changeLog;
 
+        private DTE2 _ide;
+        private IComponentModel _componentModel;
+
+        private LineEndingFinderFactoryProvider _lineEndingFinderFactoryProvider;
+
         private Guid _outputWindowGuid = new Guid("0F44E2D1-F5FA-4d2d-AB30-22BE8ECD9789");
         private IVsOutputWindow _outputWindow;
 
         private OptionsPage _optionsPage;
-        private DTE2 _ide;
 
 
         private OptionsPage OptionsPage => _optionsPage ?? (_optionsPage = GetDialogPage(typeof(OptionsPage)) as OptionsPage);
 
-        private LineEndingsChanger.LineEnding DefaultLineEnding => (LineEndingsChanger.LineEnding)OptionsPage.DefaultLineEnding;
+        private LineEnding DefaultLineEnding => (LineEnding)OptionsPage.DefaultLineEnding;
 
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
@@ -89,30 +101,46 @@
                         Enabled = true
                     });
                 }
-
-                if (await GetServiceAsync(typeof(SVsOutputWindow)) is IVsOutputWindow outputWindow)
-                {
-                    _outputWindow = outputWindow;
-                    _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
-                }
-                else
-                {
-                    throw new COMException($"Unable to resolve service {nameof(IVsOutputWindow)}");
-                }
-
-                // ReSharper disable once SuspiciousTypeConversion.Global
-                IServiceProvider serviceProvider = new ServiceProvider(_ide as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
-
-                _runningDocumentTable = new RunningDocumentTable(serviceProvider);
-                _documentSaveListener = new DocumentSaveListener(_runningDocumentTable);
-                _documentSaveListener.BeforeSave += DocumentSaveListener_BeforeSave;
-                _changesManager = new ChangesManager();
+                
             }
             else
             {
                 throw new COMException($"Unable to resolve service {nameof(IMenuCommandService)}");
             }
+
+            if (await GetServiceAsync(typeof(SVsOutputWindow)) is IVsOutputWindow outputWindow)
+            {
+                _outputWindow = outputWindow;
+                _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
+            }
+            else
+            {
+                throw new COMException($"Unable to resolve service {nameof(IVsOutputWindow)}");
+            }
+
+            if (await GetServiceAsync(typeof(SComponentModel)) is IComponentModel componentModel)
+            {
+                _componentModel = componentModel;
+            }
+            else
+            {
+                throw new COMException($"Unable to resolve service {nameof(IComponentModel)}");
+            }
+
+            var findService = _componentModel.GetService<IFindService>();
+            if (findService == null) throw new COMException($"Unable to resolve service {nameof(IFindService)}");
+            _lineEndingFinderFactoryProvider = new LineEndingFinderFactoryProvider(findService);
+
+            // ReSharper disable once SuspiciousTypeConversion.Global
+            IServiceProvider serviceProvider = new ServiceProvider(_ide as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
+
+            _runningDocumentTable = new RunningDocumentTable(serviceProvider);
+            _documentSaveListener = new DocumentSaveListener(_runningDocumentTable);
+            _documentSaveListener.BeforeSave += DocumentSaveListener_BeforeSave;
+            _changesManager = new ChangesManager();
         }
+
+
 
         private int DocumentSaveListener_BeforeSave(uint docCookie)
         {
@@ -127,11 +155,17 @@
 
                     if (DocumentMatchesConfiguredFileFormatsOrFilenames(currentDocument.Name))
                     {
-                        Output($"{LogStrings.UnifyingStarted}\n");
-                        var numberOfChanges = 0;
-                        UnifyLineEndingsInDocument(textDocument, DefaultLineEnding, ref numberOfChanges, out var numberOfIndividualChanges, out var numberOfAllLineEndings);
-                        Output(string.Format($"{LogStrings.OperationResultTemplate}\n", currentDocument.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
-                        Output($"{LogStrings.Done}\n");
+                        var writeReport = OptionsPage.WriteReport;
+
+                        if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
+
+                        UnifyLineEndingsInDocument(textDocument, DefaultLineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
+
+                        if (writeReport)
+                        {
+                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", currentDocument.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                            Output($"{LogStrings.Done}\n");
+                        }
                     }
                 }
             }
@@ -157,21 +191,17 @@
                 }
             }
 
-            if (solutionName == null) throw new InvalidOperationException("Unable to get the name of the current solution.");
+            if (solutionName == null) throw new InvalidOperationException("Unable to get the name of the current solution");
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(solutionName, UnifyOperation);
 
 
-            int UnifyOperation(LineEndingsChanger.LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEndings)
             {
-                var numberOfChanges = 0;
-
                 foreach (var project in currentSolution.GetAllProjects())
                 {
-                    UnifyLineEndingsInProjectItems(project.ProjectItems, lineEndings, ref numberOfChanges);
+                    UnifyLineEndingsInProjectItems(project.ProjectItems, lineEndings);
                 }
-
-                return numberOfChanges;
             }
         }
 
@@ -183,13 +213,9 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFolder.Name, UnifyOperation);
 
-            int UnifyOperation(LineEndingsChanger.LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEndings)
             {
-                var numberOfChanges = 0;
-
-                UnifyLineEndingsInProjectItems(selectedFolder.ProjectItems, lineEndings, ref numberOfChanges);
-
-                return numberOfChanges;
+                UnifyLineEndingsInProjectItems(selectedFolder.ProjectItems, lineEndings);
             }
         }
 
@@ -201,13 +227,9 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedProject.Name, UnifyOperation);
 
-            int UnifyOperation(LineEndingsChanger.LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEndings)
             {
-                var numberOfChanges = 0;
-
-                UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, lineEndings, ref numberOfChanges);
-
-                return numberOfChanges;
+                UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, lineEndings);
             }
         }
 
@@ -219,22 +241,18 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFile.Name, UnifyOperation, DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name));
 
-            int UnifyOperation(LineEndingsChanger.LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEndings)
             {
-                var numberOfChanges = 0;
-
-                UnifyLineEndingsInProjectItem(selectedFile, lineEndings, ref numberOfChanges);
-
-                return numberOfChanges;
+                UnifyLineEndingsInProjectItem(selectedFile, lineEndings);
             }
         }
 
-        private void UnifyLineEndingsFromSolutionExplorerMenuCommand(string windowTitle, Func<LineEndingsChanger.LineEnding, int> unifyOperation, bool unifyCondition = true)
+        private void UnifyLineEndingsFromSolutionExplorerMenuCommand(string windowTitle, Action<LineEnding> unifyOperation, bool unifyCondition = true)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             var choiceWindow = new LineEndingChoice(windowTitle, DefaultLineEnding);
-            if (choiceWindow.ShowDialog() == true && choiceWindow.LineEnding != LineEndingsChanger.LineEnding.None)
+            if (choiceWindow.ShowDialog() == true && choiceWindow.LineEnding != LineEnding.None)
             {
                 if (unifyCondition)
                 {
@@ -242,27 +260,38 @@
                     {
                         await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                        Output($"{LogStrings.UnifyingStarted}\n");
+                        var writeReport = OptionsPage.WriteReport;
+                        var trackChanges = OptionsPage.TrackChanges;
 
-                        if (OptionsPage.TrackChanges) _changeLog = _changesManager.GetLastChanges(_ide.Solution);
+                        if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
+                        if (trackChanges) _changeLog = _changesManager.GetLastChanges(_ide.Solution);
 
-                        var stopWatch = new Stopwatch();
-                        stopWatch.Start();
-                        var numberOfChanges = unifyOperation(choiceWindow.LineEnding);
-                        stopWatch.Stop();
-                        var secondsElapsed = stopWatch.ElapsedMilliseconds / 1000.0;
+                        Stopwatch sw = null;
+                        if (writeReport)
+                        {
+                            sw = new Stopwatch();
+                            sw.Start();
+                        }
 
-                        if (OptionsPage.TrackChanges) _changesManager.SaveLastChanges(_ide.Solution, _changeLog);
+                        unifyOperation(choiceWindow.LineEnding);
 
+                        double? secondsElapsed = null;
+                        if (writeReport)
+                        {
+                            sw.Stop();
+                            secondsElapsed = sw.ElapsedMilliseconds / 1000.0;
+                        }
+
+                        if (trackChanges) _changesManager.SaveLastChanges(_ide.Solution, _changeLog);
                         _changeLog = null;
-                        Output($"{string.Format(LogStrings.DoneTemplate, secondsElapsed)}\n");
+
+                        if (writeReport) Output($"{string.Format(LogStrings.DoneTemplate, secondsElapsed.Value)}\n");
                     });
                 }
             }
         }
 
-
-        private void UnifyLineEndingsInProjectItems(ProjectItems projectItems, LineEndingsChanger.LineEnding lineEnding, ref int numberOfChanges)
+        private void UnifyLineEndingsInProjectItems(ProjectItems projectItems, LineEnding lineEnding)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -270,17 +299,17 @@
             {
                 if (item.ProjectItems != null && item.ProjectItems.Count > 0)
                 {
-                    UnifyLineEndingsInProjectItems(item.ProjectItems, lineEnding, ref numberOfChanges);
+                    UnifyLineEndingsInProjectItems(item.ProjectItems, lineEnding);
                 }
 
                 if (DocumentMatchesConfiguredFileFormatsOrFilenames(item.Name))
                 {
-                    UnifyLineEndingsInProjectItem(item, lineEnding, ref numberOfChanges);
+                    UnifyLineEndingsInProjectItem(item, lineEnding);
                 }
             }
         }
 
-        private void UnifyLineEndingsInProjectItem(ProjectItem item, LineEndingsChanger.LineEnding lineEnding, ref int numberOfChanges)
+        private void UnifyLineEndingsInProjectItem(ProjectItem item, LineEnding lineEnding)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -301,10 +330,13 @@
                                                                                       ||  _changeLog[document.FullName].LineEnding != lineEnding
                                                                                       ||  _changeLog[document.FullName].Ticks < File.GetLastWriteTime(document.FullName).Ticks);
 
+                var writeReport = OptionsPage.WriteReport;
+
                 if (!OptionsPage.TrackChanges || trackChanges)
                 {
+
                     var textDocument = document.Object("TextDocument") as TextDocument;
-                    UnifyLineEndingsInDocument(textDocument, lineEnding, ref numberOfChanges, out var numberOfIndividualChanges, out var numberOfAllLineEndings);
+                    UnifyLineEndingsInDocument(textDocument, lineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
                     if (documentWindow != null || OptionsPage.SaveFilesAfterUnifying)
                     {
                         _isUnifyingLocked = true;
@@ -313,51 +345,93 @@
                     }
 
                     if (trackChanges) _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
-
-                    Output(string.Format($"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                    if (writeReport) Output(string.Format($"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
                 }
                 else
                 {
-                    Output(string.Format($"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
+                    if (writeReport) Output(string.Format($"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
                 }
             }
 
             documentWindow?.Close();
         }
 
-        private void UnifyLineEndingsInDocument(TextDocument textDocument, LineEndingsChanger.LineEnding lineEnding, ref int numberOfChanges, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
+        private void UnifyLineEndingsInDocument(TextDocument textDocument, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var startPoint = textDocument.StartPoint.CreateEditPoint();
-            var endPoint = textDocument.EndPoint.CreateEditPoint();
+            var textBuffer = GetTextBuffer(textDocument.Parent.FullName);
 
-            var text = startPoint.GetText(endPoint.AbsoluteCharOffset);
-            var originalLength = text.Length;
+            string newlineString = null;
 
             if (OptionsPage.RemoveTrailingWhitespace)
             {
-                text = TrailingWhitespaceRemover.RemoveTrailingWhitespace(text);
-            }
+                var consecutiveWhiteSpaceFollowedByLineEndingFinderFactory = _lineEndingFinderFactoryProvider.GetConsecutiveWhiteSpaceFollowedByLineEndingFinderFactory();
+                var consecutiveWhiteSpaceFollowedByLineEndingFinder = consecutiveWhiteSpaceFollowedByLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                var consecutiveWhiteSpaceFollowedByLineEndingMatches = consecutiveWhiteSpaceFollowedByLineEndingFinder.FindAll().ToArray();
 
-            var changedText = LineEndingsChanger.ChangeLineEndings(text, lineEnding, ref numberOfChanges, out numberOfIndividualChanges, out numberOfAllLineEndings);
-
-            if (OptionsPage.AddNewlineOnLastLine)
-            {
-                if (!changedText.EndsWith(Utilities.GetNewlineString(lineEnding)))
+                if (consecutiveWhiteSpaceFollowedByLineEndingMatches.Length > 0)
                 {
-                    changedText += Utilities.GetNewlineString(lineEnding);
+                    newlineString = Utilities.GetNewlineString(lineEnding);
+
+                    using (var textEdit = textBuffer.CreateEdit())
+                    {
+                        foreach (var consecutiveWhiteSpaceFollowedByLineEndingMatch in consecutiveWhiteSpaceFollowedByLineEndingMatches)
+                        {
+                            textEdit.Delete(consecutiveWhiteSpaceFollowedByLineEndingMatch);
+                        }
+
+                        textEdit.Apply();
+                    }
                 }
             }
 
-            startPoint.ReplaceText(originalLength, changedText, (int)vsEPReplaceTextOptions.vsEPReplaceTextKeepMarkers);
+            ChangeLineEndings(_lineEndingFinderFactoryProvider, textBuffer, lineEnding, out numberOfIndividualChanges, out numberOfAllLineEndings, writeReport);
+
+            if (OptionsPage.AddNewlineOnLastLine)
+            {
+                var documentText = textBuffer.CurrentSnapshot.GetText();
+                if (!documentText.EndsWith(Utilities.GetNewlineString(lineEnding)))
+                {
+                    var editPoint = textDocument.EndPoint.CreateEditPoint();
+                    if (editPoint.AtEndOfDocument && !editPoint.AtStartOfLine)
+                    {
+                        if (newlineString == null)
+                        {
+                            newlineString = Utilities.GetNewlineString(lineEnding);
+                        }
+
+                        editPoint.Insert(newlineString);
+                    }
+                }
+            }
+        }
+
+        private ITextBuffer GetTextBuffer(string documentFullPath)
+        {
+            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>();
+            if (editorAdaptersFactoryService == null) throw new COMException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
+
+            if (VsShellUtilities.IsDocumentOpen(this,
+                                                documentFullPath,
+                                                Guid.Empty,
+                                                out _,
+                                                out _,
+                                                out var windowFrame))
+            {
+                var view = VsShellUtilities.GetTextView(windowFrame);
+                if (view.GetBuffer(out var textLines) == 0)
+                {
+                    if (textLines is IVsTextBuffer buffer) return editorAdaptersFactoryService.GetDataBuffer(buffer);
+                }
+            }
+
+            return null;
         }
 
         private void Output(string message)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-
-            if (!OptionsPage.WriteReport) return;
 
             _outputWindow.GetPane(ref _outputWindowGuid, out var outputWindowPane);
 
@@ -369,6 +443,7 @@
             ThreadHelper.ThrowIfNotOnUIThread();
 
             var documentInfoMoniker = _runningDocumentTable.GetDocumentInfo(docCookie).Moniker;
+            //var textBuffer = GetTextBuffer(documentInfoMoniker).Properties;
 
             var documents = _ide.Documents;
             foreach (Document document in documents)

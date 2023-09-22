@@ -1,6 +1,6 @@
 ﻿namespace LineEndingsUnifier
 {
-    public static class Utilities
+    internal static class Utilities
     {
         public static string GetNewlineString(LineEndingsChanger.LineEnding lineEnding)
         {

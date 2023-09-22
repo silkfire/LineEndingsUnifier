@@ -8,7 +8,7 @@
     using System.IO;
     using System.Xml;
 
-    public class ChangesManager
+    internal class ChangesManager
     {
         public Dictionary<string, LastChanges> GetLastChanges(Solution solution)
         {

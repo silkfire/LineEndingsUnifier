@@ -1,8 +1,10 @@
 ﻿namespace LineEndingsUnifier
 {
-    using System.Text.RegularExpressions;
+    using Microsoft.VisualStudio.Text;
 
-    public static class LineEndingsChanger
+    using System.Linq;
+
+    internal static class LineEndingsChanger
     {
         public enum LineEnding
         {
@@ -21,64 +23,81 @@
             Dominant
         }
 
-        private const string LineEndingPattern = "\r\n?|\n";
-
-        private const string WindowsLineEnding = "\r\n";
-
-        private const string LinuxLineEnding = "\n";
-
-        private const string MacintoshLineEnding = "\r";
-
-        public static string ChangeLineEndings(string text, LineEnding lineEnding, ref int numberOfChanges, out int numberOfIndividualChanges, out int numberOfAllLineEndings)
+        public static void ChangeLineEndings(LineEndingFinderFactoryProvider lineEndingFinderFactoryProvider, ITextBuffer textBuffer, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
         {
             numberOfIndividualChanges = 0;
 
-            var replacementString = string.Empty;
+            var lineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLineEndingFinderFactory();
+            var lineEndingFinder = lineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+            var allLineEndingMatches = lineEndingFinder.FindAll().ToArray();
 
-            numberOfAllLineEndings = Regex.Matches(text, LineEndingPattern).Count;
-            var numberOfWindowsLineEndings = Regex.Matches(text, WindowsLineEnding).Count;
-            var numberOfLinuxLineEndings = Regex.Matches(text, LinuxLineEnding).Count - numberOfWindowsLineEndings;
-            var numberOfMacintoshLineEndings = Regex.Matches(text, MacintoshLineEnding).Count - numberOfWindowsLineEndings;
+            numberOfAllLineEndings = writeReport ? allLineEndingMatches.Length : null as int?;
 
-            switch (lineEnding)
+            if (allLineEndingMatches.Length > 0)
             {
-                case LineEnding.Linux:
-                    replacementString = LinuxLineEnding;
-                    numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
-                    break;
-                case LineEnding.Windows:
-                    replacementString = WindowsLineEnding;
-                    numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
-                    break;
-                case LineEnding.Macintosh:
-                    replacementString = MacintoshLineEnding;
-                    numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
-                    break;
-                case LineEnding.Dominant:
-                    if (numberOfWindowsLineEndings > numberOfLinuxLineEndings && numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
-                    {
-                        replacementString = WindowsLineEnding;
+                var windowsLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetWindowsLineEndingFinderFactory();
+                var windowsLineEndingFinder = windowsLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                var numberOfWindowsLineEndings = windowsLineEndingFinder.FindAll().Count();
+
+                var linuxLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLinuxLineEndingFinderFactory();
+                var linuxLineEndingFinder = linuxLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                var numberOfLinuxLineEndings = linuxLineEndingFinder.FindAll().Count() - numberOfWindowsLineEndings;
+
+                var macintoshLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetMacinotshLineEndingFinderFactory();
+                var macintoshLineEndingFinder = macintoshLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                var numberOfMacintoshLineEndings = macintoshLineEndingFinder.FindAll().Count() - numberOfWindowsLineEndings;
+
+                string lineEndingReplacement = null;
+
+                switch (lineEnding)
+                {
+                    case LineEnding.Windows:
+                        lineEndingReplacement = LineEndingSearchPattern.Windows;
                         numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
-                    }
-                    else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings && numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
-                    {
-                        replacementString = LinuxLineEnding;
+
+                        break;
+                    case LineEnding.Linux:
+                        lineEndingReplacement = LineEndingSearchPattern.Linux;
                         numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
-                    }
-                    else
-                    {
-                        replacementString = MacintoshLineEnding;
+
+                        break;
+                    case LineEnding.Macintosh:
+                        lineEndingReplacement = LineEndingSearchPattern.Macintosh;
                         numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
+
+                        break;
+                    case LineEnding.Dominant:
+                        if (numberOfWindowsLineEndings > numberOfLinuxLineEndings &&
+                            numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
+                        {
+                            lineEndingReplacement = LineEndingSearchPattern.Windows;
+                            numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
+                        }
+                        else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings &&
+                                 numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
+                        {
+                            lineEndingReplacement = LineEndingSearchPattern.Linux;
+                            numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
+                        }
+                        else
+                        {
+                            lineEndingReplacement = LineEndingSearchPattern.Macintosh;
+                            numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
+                        }
+
+                        break;
+                }
+
+                using (var textEdit = textBuffer.CreateEdit())
+                {
+                    foreach (var lineEndingMatch in allLineEndingMatches)
+                    {
+                        textEdit.Replace(lineEndingMatch, lineEndingReplacement);
                     }
 
-                    break;
+                    textEdit.Apply();
+                }
             }
-
-            var modifiedText = Regex.Replace(text, LineEndingPattern, replacementString);
-
-            numberOfChanges += numberOfIndividualChanges;
-
-            return modifiedText;
         }
     }
 }
