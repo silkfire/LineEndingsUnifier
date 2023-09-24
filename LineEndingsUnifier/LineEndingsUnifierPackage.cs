@@ -150,20 +150,18 @@
             {
                 if (OptionsPage.ForceDefaultLineEndingOnSave)
                 {
-                    var currentDocument = GetDocumentFromDocCookie(docCookie);
-                    var textDocument = currentDocument.Object("TextDocument") as TextDocument;
+                    var textBuffer = GetTextBufferFromDocCookie(docCookie, out var documentFullPath);
 
-                    if (DocumentMatchesConfiguredFileFormatsOrFilenames(currentDocument.Name))
+                    if (DocumentMatchesConfiguredFileFormatsOrFilenames(Path.GetFileName(documentFullPath)))
                     {
                         var writeReport = OptionsPage.WriteReport;
-
                         if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
 
-                        UnifyLineEndingsInDocument(textDocument, DefaultLineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
+                        UnifyLineEndingsInDocument(textBuffer, DefaultLineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
 
                         if (writeReport)
                         {
-                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", currentDocument.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", documentFullPath, numberOfIndividualChanges, numberOfAllLineEndings));
                             Output($"{LogStrings.Done}\n");
                         }
                     }
@@ -334,9 +332,9 @@
 
                 if (!OptionsPage.TrackChanges || trackChanges)
                 {
+                    var textBuffer = GetTextBuffer(document.FullName);
+                    UnifyLineEndingsInDocument(textBuffer, lineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
 
-                    var textDocument = document.Object("TextDocument") as TextDocument;
-                    UnifyLineEndingsInDocument(textDocument, lineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
                     if (documentWindow != null || OptionsPage.SaveFilesAfterUnifying)
                     {
                         _isUnifyingLocked = true;
@@ -356,11 +354,9 @@
             documentWindow?.Close();
         }
 
-        private void UnifyLineEndingsInDocument(TextDocument textDocument, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
+        private void UnifyLineEndingsInDocument(ITextBuffer textBuffer, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-
-            var textBuffer = GetTextBuffer(textDocument.Parent.FullName);
 
             string newlineString = null;
 
@@ -390,18 +386,18 @@
 
             if (OptionsPage.AddNewlineOnLastLine)
             {
-                var documentText = textBuffer.CurrentSnapshot.GetText();
-                if (!documentText.EndsWith(Utilities.GetNewlineString(lineEnding)))
+                var lastLine = textBuffer.CurrentSnapshot.GetLineFromLineNumber(textBuffer.CurrentSnapshot.LineCount - 1);
+                if (lastLine.LengthIncludingLineBreak > 0)
                 {
-                    var editPoint = textDocument.EndPoint.CreateEditPoint();
-                    if (editPoint.AtEndOfDocument && !editPoint.AtStartOfLine)
+                    if (newlineString == null)
                     {
-                        if (newlineString == null)
-                        {
-                            newlineString = Utilities.GetNewlineString(lineEnding);
-                        }
+                        newlineString = Utilities.GetNewlineString(lineEnding);
+                    }
 
-                        editPoint.Insert(newlineString);
+                    using (var textEdit = textBuffer.CreateEdit())
+                    {
+                        textEdit.Insert(lastLine.End, newlineString);
+                        textEdit.Apply();
                     }
                 }
             }
@@ -429,6 +425,17 @@
             return null;
         }
 
+        private ITextBuffer GetTextBufferFromDocCookie(uint docCookie, out string documentFullPath)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            documentFullPath = _runningDocumentTable.GetDocumentInfo(docCookie).Moniker;
+
+            return GetTextBuffer(documentFullPath);
+        }
+
+        private bool DocumentMatchesConfiguredFileFormatsOrFilenames(string filename) => filename.EndsWithAny(OptionsPage.SupportedFileFormatsArray) || filename.EqualsAny(OptionsPage.SupportedFilenamesArray);
+        
         private void Output(string message)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -437,23 +444,5 @@
 
             outputWindowPane.OutputStringThreadSafe(message);
         }
-
-        private Document GetDocumentFromDocCookie(uint docCookie)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            var documentInfoMoniker = _runningDocumentTable.GetDocumentInfo(docCookie).Moniker;
-            //var textBuffer = GetTextBuffer(documentInfoMoniker).Properties;
-
-            var documents = _ide.Documents;
-            foreach (Document document in documents)
-            {
-                if (document.FullName == documentInfoMoniker) return document;
-            }
-
-            return null;
-        }
-
-        private bool DocumentMatchesConfiguredFileFormatsOrFilenames(string filename) => filename.EndsWithAny(OptionsPage.SupportedFileFormatsArray) || filename.EqualsAny(OptionsPage.SupportedFilenamesArray);
     }
 }
