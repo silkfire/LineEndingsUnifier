@@ -1,11 +1,15 @@
 ﻿namespace LineEndingsUnifier
 {
     using Microsoft.VisualStudio.Text;
+    using Microsoft.VisualStudio.Text.Editor;
+    using Microsoft.VisualStudio.Text.Operations;
 
     using System.Linq;
 
     internal static class LineEndingsChanger
     {
+        //private const int SB_VERT = 1;
+
         public enum LineEnding
         {
             Windows,
@@ -23,81 +27,108 @@
             Dominant
         }
 
-        public static void ChangeLineEndings(LineEndingFinderFactoryProvider lineEndingFinderFactoryProvider, ITextBuffer textBuffer, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
+        public static void ChangeLineEndings(LineEndingFinderFactoryProvider lineEndingFinderFactoryProvider, ITextBuffer textBuffer, IWpfTextView textView, LineEnding desiredLineEnding, out int? numberOfChangedLineEndings, out int? numberOfLineEndingsOfAnyType, bool writeReport)
         {
-            numberOfIndividualChanges = 0;
-
             var lineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLineEndingFinderFactory();
             var lineEndingFinder = lineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
             var allLineEndingMatches = lineEndingFinder.FindAll().ToArray();
 
-            numberOfAllLineEndings = writeReport ? allLineEndingMatches.Length : null as int?;
+            int? numberOfChangedLineEndingsInternal = null;
+            numberOfLineEndingsOfAnyType = writeReport ? allLineEndingMatches.Length : null as int?;
 
             if (allLineEndingMatches.Length > 0)
             {
-                var windowsLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetWindowsLineEndingFinderFactory();
-                var windowsLineEndingFinder = windowsLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                var numberOfWindowsLineEndings = windowsLineEndingFinder.FindAll().Count();
+                string desiredLineEndingReplacement = null;
+                IFinderFactory unexpectedLineEndingFinderFactory = null;
 
-                var linuxLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLinuxLineEndingFinderFactory();
-                var linuxLineEndingFinder = linuxLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                var numberOfLinuxLineEndings = linuxLineEndingFinder.FindAll().Count() - numberOfWindowsLineEndings;
-
-                var macintoshLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetMacinotshLineEndingFinderFactory();
-                var macintoshLineEndingFinder = macintoshLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                var numberOfMacintoshLineEndings = macintoshLineEndingFinder.FindAll().Count() - numberOfWindowsLineEndings;
-
-                string lineEndingReplacement = null;
-
-                switch (lineEnding)
+                switch (desiredLineEnding)
                 {
                     case LineEnding.Windows:
-                        lineEndingReplacement = LineEndingSearchPattern.Windows;
-                        numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
+                        desiredLineEndingReplacement = LineEndingSearchPattern.Windows;
+                        unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonWindowsLineEndingFinderFactory();
 
                         break;
                     case LineEnding.Linux:
-                        lineEndingReplacement = LineEndingSearchPattern.Linux;
-                        numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
+                        desiredLineEndingReplacement = LineEndingSearchPattern.Linux;
+                        unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonLinuxLineEndingFinderFactory();
 
                         break;
                     case LineEnding.Macintosh:
-                        lineEndingReplacement = LineEndingSearchPattern.Macintosh;
-                        numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
+                        desiredLineEndingReplacement = LineEndingSearchPattern.Macintosh;
+                        unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonMacintoshLineEndingFinderFactory();
 
                         break;
                     case LineEnding.Dominant:
+                        var windowsLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetWindowsLineEndingFinderFactory();
+                        var windowsLineEndingFinder = windowsLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                        var numberOfWindowsLineEndings = windowsLineEndingFinder.FindAll().Count();
+
+                        var linuxLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLinuxLineEndingFinderFactory();
+                        var linuxLineEndingFinder = linuxLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                        var numberOfLinuxLineEndings = linuxLineEndingFinder.FindAll().Count();
+
+                        var macintoshLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetMacintoshLineEndingFinderFactory();
+                        var macintoshLineEndingFinder = macintoshLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                        var numberOfMacintoshLineEndings = macintoshLineEndingFinder.FindAll().Count();
+
+
                         if (numberOfWindowsLineEndings > numberOfLinuxLineEndings &&
                             numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
                         {
-                            lineEndingReplacement = LineEndingSearchPattern.Windows;
-                            numberOfIndividualChanges = numberOfLinuxLineEndings + numberOfMacintoshLineEndings;
+                            desiredLineEndingReplacement = LineEndingSearchPattern.Windows;
+                            unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonWindowsLineEndingFinderFactory();
                         }
                         else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings &&
                                  numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
                         {
-                            lineEndingReplacement = LineEndingSearchPattern.Linux;
-                            numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfMacintoshLineEndings;
+                            desiredLineEndingReplacement = LineEndingSearchPattern.Linux;
+                            unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonLinuxLineEndingFinderFactory();
                         }
                         else
                         {
-                            lineEndingReplacement = LineEndingSearchPattern.Macintosh;
-                            numberOfIndividualChanges = numberOfWindowsLineEndings + numberOfLinuxLineEndings;
+                            desiredLineEndingReplacement = LineEndingSearchPattern.Macintosh;
+                            unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonMacintoshLineEndingFinderFactory();
                         }
 
                         break;
                 }
 
-                using (var textEdit = textBuffer.CreateEdit())
+
+                var unexpectedLineEndingFinder = unexpectedLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
+                var unexpectedLineEndingMatches = unexpectedLineEndingFinder.FindAll().ToArray();
+                if (unexpectedLineEndingMatches.Length > 0)
                 {
-                    foreach (var lineEndingMatch in allLineEndingMatches)
+                    var caretPositionBeforeEdit = textView.Caret.Position.BufferPosition;
+                    //var textViewLinesTopBeforeEdit = textView.TextViewLines.FirstVisibleLine.Top;
+                    //var textViewLineCountTopBeforeEdit = textView.TextViewLines.Count;
+
+                    var undoManager = textBuffer.Properties.GetProperty<ITextBufferUndoManager>(typeof(ITextBufferUndoManager));
+                    using (var textEdit = undoManager.TextBuffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null))
+                    using (var undo = undoManager.TextBufferUndoHistory.CreateTransaction("Unify Line Endings"))
                     {
-                        textEdit.Replace(lineEndingMatch, lineEndingReplacement);
+                        foreach (var unexpectedLineEndingMatch in unexpectedLineEndingMatches)
+                        {
+                            textEdit.Replace(unexpectedLineEndingMatch, desiredLineEndingReplacement);
+                        }
+
+                        textEdit.Apply();
+                        undo.Complete();
                     }
 
-                    textEdit.Apply();
+                    var caretPositionAfterEdit = caretPositionBeforeEdit.TranslateTo(textView.TextSnapshot, PointTrackingMode.Positive);
+                    textView.Caret.MoveTo(caretPositionAfterEdit);
+
+                    //var textViewLineCountTopAfterEdit = textView.TextViewLines.Count;
+
+                    ////textView.DisplayTextLineContainingBufferPosition(textView.TextViewLines.FirstVisibleLine.Start, textViewLinesTopBeforeEdit, ViewRelativePosition.Top);
+                    ////textView.ViewScroller.ScrollViewportVerticallyByPixels(-16);
+                    //textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, 1);
                 }
+
+                numberOfChangedLineEndingsInternal = unexpectedLineEndingMatches.Length;
             }
+
+            numberOfChangedLineEndings = writeReport ? numberOfChangedLineEndingsInternal : null;
         }
     }
 }

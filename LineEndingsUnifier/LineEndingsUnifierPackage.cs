@@ -10,6 +10,7 @@
     using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.Shell.Interop;
     using Microsoft.VisualStudio.Text;
+    using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Operations;
     using Microsoft.VisualStudio.TextManager.Interop;
 
@@ -150,18 +151,18 @@
             {
                 if (OptionsPage.ForceDefaultLineEndingOnSave)
                 {
-                    var textBuffer = GetTextBufferFromDocCookie(docCookie, out var documentFullPath);
+                    var textBuffer = GetTextBufferFromDocCookie(docCookie, out var documentFullPath, out var textView);
 
                     if (DocumentMatchesConfiguredFileFormatsOrFilenames(Path.GetFileName(documentFullPath)))
                     {
                         var writeReport = OptionsPage.WriteReport;
                         if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
 
-                        UnifyLineEndingsInDocument(textBuffer, DefaultLineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
+                        UnifyLineEndingsInDocument(textBuffer, textView, DefaultLineEnding, out var numberOfChangedLineEndings, out var numberOfLineEndingsOfAnyType, writeReport);
 
                         if (writeReport)
                         {
-                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", documentFullPath, numberOfIndividualChanges, numberOfAllLineEndings));
+                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", documentFullPath, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
                             Output($"{LogStrings.Done}\n");
                         }
                     }
@@ -332,8 +333,8 @@
 
                 if (!OptionsPage.TrackChanges || trackChanges)
                 {
-                    var textBuffer = GetTextBuffer(document.FullName);
-                    UnifyLineEndingsInDocument(textBuffer, lineEnding, out var numberOfIndividualChanges, out var numberOfAllLineEndings, writeReport);
+                    var textBuffer = GetTextBuffer(document.FullName, out var textView);
+                    UnifyLineEndingsInDocument(textBuffer, textView, lineEnding, out var numberOfChangedLineEndings, out var numberOfLineEndingsOfAnyType, writeReport);
 
                     if (documentWindow != null || OptionsPage.SaveFilesAfterUnifying)
                     {
@@ -343,7 +344,7 @@
                     }
 
                     if (trackChanges) _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
-                    if (writeReport) Output(string.Format($"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfIndividualChanges, numberOfAllLineEndings));
+                    if (writeReport) Output(string.Format($"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
                 }
                 else
                 {
@@ -354,7 +355,7 @@
             documentWindow?.Close();
         }
 
-        private void UnifyLineEndingsInDocument(ITextBuffer textBuffer, LineEnding lineEnding, out int? numberOfIndividualChanges, out int? numberOfAllLineEndings, bool writeReport)
+        private void UnifyLineEndingsInDocument(ITextBuffer textBuffer, IWpfTextView textView, LineEnding lineEnding, out int? numberOfChangedLineEndings, out int? numberOfLineEndingsOfAnyType, bool writeReport)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -382,7 +383,7 @@
                 }
             }
 
-            ChangeLineEndings(_lineEndingFinderFactoryProvider, textBuffer, lineEnding, out numberOfIndividualChanges, out numberOfAllLineEndings, writeReport);
+            ChangeLineEndings(_lineEndingFinderFactoryProvider, textBuffer, textView, lineEnding, out numberOfChangedLineEndings, out numberOfLineEndingsOfAnyType, writeReport);
 
             if (OptionsPage.AddNewlineOnLastLine)
             {
@@ -403,8 +404,10 @@
             }
         }
 
-        private ITextBuffer GetTextBuffer(string documentFullPath)
+        private ITextBuffer GetTextBuffer(string documentFullPath, out IWpfTextView wpfTextView)
         {
+            wpfTextView = null;
+
             var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>();
             if (editorAdaptersFactoryService == null) throw new COMException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
 
@@ -415,8 +418,10 @@
                                                 out _,
                                                 out var windowFrame))
             {
-                var view = VsShellUtilities.GetTextView(windowFrame);
-                if (view.GetBuffer(out var textLines) == 0)
+                var viewAdapter = VsShellUtilities.GetTextView(windowFrame);
+                wpfTextView = editorAdaptersFactoryService.GetWpfTextView(viewAdapter);
+
+                if (viewAdapter.GetBuffer(out var textLines) == 0)
                 {
                     if (textLines is IVsTextBuffer buffer) return editorAdaptersFactoryService.GetDataBuffer(buffer);
                 }
@@ -425,13 +430,13 @@
             return null;
         }
 
-        private ITextBuffer GetTextBufferFromDocCookie(uint docCookie, out string documentFullPath)
+        private ITextBuffer GetTextBufferFromDocCookie(uint docCookie, out string documentFullPath, out IWpfTextView textView)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             documentFullPath = _runningDocumentTable.GetDocumentInfo(docCookie).Moniker;
 
-            return GetTextBuffer(documentFullPath);
+            return GetTextBuffer(documentFullPath, out textView);
         }
 
         private bool DocumentMatchesConfiguredFileFormatsOrFilenames(string filename) => filename.EndsWithAny(OptionsPage.SupportedFileFormatsArray) || filename.EqualsAny(OptionsPage.SupportedFilenamesArray);
