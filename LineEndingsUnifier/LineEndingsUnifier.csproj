@@ -116,21 +116,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MessagePack">
-      <Version>2.5.168</Version>
-    </PackageReference>
-    <PackageReference Include="MessagePack.Annotations">
-      <Version>2.5.168</Version>
+      <Version>2.5.172</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK">
-      <Version>17.10.40171</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.SDK.Analyzers">
-      <Version>17.7.32</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
+      <Version>17.11.40262</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools">
-      <Version>17.10.2185</Version>
+      <Version>17.11.435</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
