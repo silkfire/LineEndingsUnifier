@@ -39,7 +39,7 @@
             get => _supportedFileFormats;
             set
             {
-                SupportedFileFormatsArray =  value.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                SupportedFileFormatsArray = value.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                 _supportedFileFormats = value;
             }
         }
@@ -103,7 +103,10 @@
                         {
                             var path = $"{Path.GetDirectoryName(ide.Solution.FullName)}.{ChangeLogFileExtension}";
 
-                            if (File.Exists(path)) File.Delete(path);
+                            if (File.Exists(path))
+                            {
+                                File.Delete(path);
+                            }
                         }
                     }
                 }
