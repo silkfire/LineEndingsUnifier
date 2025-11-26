@@ -29,7 +29,7 @@
         public bool ForceDefaultLineEndingOnSave { get; set; }
 
 
-        private string _supportedFileFormats = ".cpp; .c; .h; .hpp; .cs; .js; .vb; .txt";
+        private string _supportedFileFormats;
 
         [Category(Category)]
         [DisplayName("Supported File Formats")]
@@ -47,7 +47,7 @@
         internal string[] SupportedFileFormatsArray { get; private set; }
 
 
-        private string _supportedFilenames = "Dockerfile";
+        private string _supportedFilenames;
 
         [Category(Category)]
         [DisplayName("Supported Filenames")]
@@ -119,5 +119,11 @@
         [DisplayName("Remove Trailing Whitespace")]
         [Description("Set this to TRUE if you want the extension to remove trailing whitespace characters while unifying newline characters")]
         public bool RemoveTrailingWhitespace { get; set; }
+
+        public OptionsPage()
+        {
+            SupportedFileFormats = ".cpp; .c; .h; .hpp; .cs; .js; .vb; .txt";
+            SupportedFilenames = "Dockerfile";
+        }
     }
 }

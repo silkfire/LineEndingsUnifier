@@ -6,5 +6,5 @@
         public const uint cmdidUnifyLineEndings_Folder = 0x101;
         public const uint cmdidUnifyLineEndings_Project = 0x102;
         public const uint cmdidUnifyLineEndings_File = 0x103;
-    };
+    }
 }

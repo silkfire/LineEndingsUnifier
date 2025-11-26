@@ -54,11 +54,10 @@
 
         private LineEndingFinderFactoryProvider _lineEndingFinderFactoryProvider;
 
-        private Guid _outputWindowGuid = new Guid("0F44E2D1-F5FA-4d2d-AB30-22BE8ECD9789");
+        private static Guid _outputWindowGuid = new Guid("0F44E2D1-F5FA-4d2d-AB30-22BE8ECD9789");
         private IVsOutputWindow _outputWindow;
 
         private OptionsPage _optionsPage;
-
 
         private OptionsPage OptionsPage => _optionsPage ?? (_optionsPage = GetDialogPage(typeof(OptionsPage)) as OptionsPage);
 
@@ -75,61 +74,85 @@
             // Switches to the UI thread in order to consume some services used in command initialization
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            if (await GetServiceAsync(typeof(DTE)) is DTE2 dte)
+            try
             {
-                _ide = dte;
+                _ide = await GetServiceAsync<DTE, DTE2>(true, cancellationToken);
             }
-            else
+            catch (ServiceUnavailableException)
             {
                 throw new COMException($"Unable to resolve service {nameof(DTE2)}");
             }
 
-            if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService mcs)
+            try
             {
-                var commands = new List<(CommandID CommandId, EventHandler EventHandler)>
-                {
-                    (new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Solution, (int)PkgCmdIDList.cmdidUnifyLineEndings_Solution), UnifyLineEndingsInSolutionEventHandler),
-                    (new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Folder,   (int)PkgCmdIDList.cmdidUnifyLineEndings_Folder),   UnifyLineEndingsInFolderEventHandler),
-                    (new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Project,  (int)PkgCmdIDList.cmdidUnifyLineEndings_Project),  UnifyLineEndingsInProjectEventHandler),
-                    (new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_File,     (int)PkgCmdIDList.cmdidUnifyLineEndings_File),     UnifyLineEndingsInFileEventHandler),
-                };
+                var menuCommandService = await GetServiceAsync<IMenuCommandService, OleMenuCommandService>(true, cancellationToken);
 
-                foreach (var (commandId, eventHandler) in commands)
-                {
-                    mcs.AddCommand(new MenuCommand(eventHandler, commandId)
-                    {
-                        Visible = true,
-                        Enabled = true
-                    });
-                }
-                
+
+
+                // ReSharper disable once PossibleNullReferenceException
+                menuCommandService.AddCommand(new MenuCommand(UnifyLineEndingsInSolutionEventHandler, new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Solution, (int)PkgCmdIDList.cmdidUnifyLineEndings_Solution))
+                                              {
+                                                  Visible = true,
+                                                  Enabled = true
+                                              });
+
+                menuCommandService.AddCommand(new MenuCommand(UnifyLineEndingsInFolderEventHandler, new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Folder, (int)PkgCmdIDList.cmdidUnifyLineEndings_Folder))
+                                              {
+                                                  Visible = true,
+                                                  Enabled = true
+                                              });
+
+                menuCommandService.AddCommand(new MenuCommand(UnifyLineEndingsInProjectEventHandler, new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_Project, (int)PkgCmdIDList.cmdidUnifyLineEndings_Project))
+                                              {
+                                                  Visible = true,
+                                                  Enabled = true
+                                              });
+
+
+                var itemMenuCommand = new OleMenuCommand(UnifyLineEndingsInFileEventHandler, new CommandID(GuidList.guidLine_Endings_UnifierCmdSet_File, (int)PkgCmdIDList.cmdidUnifyLineEndings_File))
+                                      {
+                                          Visible = false,
+                                          Enabled = true
+                                      };
+                itemMenuCommand.BeforeQueryStatus += ItemMenuCommand_BeforeQueryStatus;
+
+                menuCommandService.AddCommand(itemMenuCommand);
             }
-            else
+            catch (ServiceUnavailableException)
             {
                 throw new COMException($"Unable to resolve service {nameof(IMenuCommandService)}");
             }
 
-            if (await GetServiceAsync(typeof(SVsOutputWindow)) is IVsOutputWindow outputWindow)
+            try
             {
-                _outputWindow = outputWindow;
+                _outputWindow = await GetServiceAsync<SVsOutputWindow, IVsOutputWindow>(true, cancellationToken);
+
+                // ReSharper disable once PossibleNullReferenceException
                 _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
             }
-            else
+            catch (ServiceUnavailableException)
             {
                 throw new COMException($"Unable to resolve service {nameof(IVsOutputWindow)}");
             }
 
-            if (await GetServiceAsync(typeof(SComponentModel)) is IComponentModel componentModel)
+            try
             {
-                _componentModel = componentModel;
+                _componentModel = await GetServiceAsync<SComponentModel, IComponentModel>(true, cancellationToken);
+
+                // ReSharper disable once PossibleNullReferenceException
+                _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
             }
-            else
+            catch (ServiceUnavailableException)
             {
                 throw new COMException($"Unable to resolve service {nameof(IComponentModel)}");
             }
 
+            // ReSharper disable once PossibleNullReferenceException
             var findService = _componentModel.GetService<IFindService>();
-            if (findService == null) throw new COMException($"Unable to resolve service {nameof(IFindService)}");
+            if (findService == null)
+            {
+                throw new COMException($"Unable to resolve service {nameof(IFindService)}");
+            }
             _lineEndingFinderFactoryProvider = new LineEndingFinderFactoryProvider(findService);
 
             // ReSharper disable once SuspiciousTypeConversion.Global
@@ -141,7 +164,16 @@
             _changesManager = new ChangesManager();
         }
 
+        private void ItemMenuCommand_BeforeQueryStatus(object sender, EventArgs _)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
 
+            var selectedFile = _ide.SelectedItems.Item(1).ProjectItem;
+
+            var itemMenuCommand = sender as MenuCommand;
+            // ReSharper disable once PossibleNullReferenceException
+            itemMenuCommand.Visible = DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name);
+        }
 
         private int DocumentSaveListener_BeforeSave(uint docCookie)
         {
@@ -190,7 +222,10 @@
                 }
             }
 
-            if (solutionName == null) throw new InvalidOperationException("Unable to get the name of the current solution");
+            if (solutionName == null)
+            {
+                throw new InvalidOperationException("Unable to get the name of the current solution");
+            }
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(solutionName, UnifyOperation);
 
@@ -212,9 +247,9 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFolder.Name, UnifyOperation);
 
-            void UnifyOperation(LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEnding)
             {
-                UnifyLineEndingsInProjectItems(selectedFolder.ProjectItems, lineEndings);
+                UnifyLineEndingsInProjectItems(selectedFolder.ProjectItems, lineEnding);
             }
         }
 
@@ -226,9 +261,9 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedProject.Name, UnifyOperation);
 
-            void UnifyOperation(LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEnding)
             {
-                UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, lineEndings);
+                UnifyLineEndingsInProjectItems(selectedProject.ProjectItems, lineEnding);
             }
         }
 
@@ -240,9 +275,9 @@
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFile.Name, UnifyOperation, DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name));
 
-            void UnifyOperation(LineEnding lineEndings)
+            void UnifyOperation(LineEnding lineEnding)
             {
-                UnifyLineEndingsInProjectItem(selectedFile, lineEndings);
+                UnifyLineEndingsInProjectItem(selectedFile, lineEnding);
             }
         }
 
@@ -440,7 +475,7 @@
         }
 
         private bool DocumentMatchesConfiguredFileFormatsOrFilenames(string filename) => filename.EndsWithAny(OptionsPage.SupportedFileFormatsArray) || filename.EqualsAny(OptionsPage.SupportedFilenamesArray);
-        
+
         private void Output(string message)
         {
             ThreadHelper.ThrowIfNotOnUIThread();

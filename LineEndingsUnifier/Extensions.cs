@@ -13,7 +13,6 @@
 
         public static bool EndsWithAny(this string str, string[] strings) => strings.Any(str.EndsWith);
 
-
         public static IReadOnlyList<Project> GetAllProjects(this Solution solution)
         {
             ThreadHelper.ThrowIfNotOnUIThread();

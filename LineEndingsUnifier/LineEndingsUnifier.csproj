@@ -56,7 +56,7 @@
   <ItemGroup>
     <Compile Include="ChangesTracker.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Guids.cs" />
+    <Compile Include="GuidList.cs" />
     <Compile Include="LastChanges.cs" />
     <Compile Include="LineEndingChoice.xaml.cs">
       <DependentUpon>LineEndingChoice.xaml</DependentUpon>
