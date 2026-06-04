@@ -4,6 +4,7 @@
 
     using EnvDTE;
     using EnvDTE80;
+    using Microsoft;
     using Microsoft.VisualStudio;
     using Microsoft.VisualStudio.ComponentModelHost;
     using Microsoft.VisualStudio.Editor;
@@ -77,6 +78,7 @@
             try
             {
                 _ide = await GetServiceAsync<DTE, DTE2>(true, cancellationToken);
+                Assumes.Present(_ide);
             }
             catch (ServiceUnavailableException)
             {
@@ -86,6 +88,7 @@
             try
             {
                 var menuCommandService = await GetServiceAsync<IMenuCommandService, OleMenuCommandService>(true, cancellationToken);
+                Assumes.Present(menuCommandService);
 
 
 
@@ -126,6 +129,7 @@
             try
             {
                 _outputWindow = await GetServiceAsync<SVsOutputWindow, IVsOutputWindow>(true, cancellationToken);
+                Assumes.Present(_outputWindow);
 
                 // ReSharper disable once PossibleNullReferenceException
                 _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
@@ -138,6 +142,7 @@
             try
             {
                 _componentModel = await GetServiceAsync<SComponentModel, IComponentModel>(true, cancellationToken);
+                Assumes.Present(_componentModel);
 
                 // ReSharper disable once PossibleNullReferenceException
                 _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
@@ -228,6 +233,7 @@
             }
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(solutionName, UnifyOperation);
+            return;
 
 
             void UnifyOperation(LineEnding lineEndings)
@@ -246,6 +252,7 @@
             var selectedFolder = _ide.SelectedItems.Item(1).ProjectItem;
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFolder.Name, UnifyOperation);
+            return;
 
             void UnifyOperation(LineEnding lineEnding)
             {
@@ -260,6 +267,7 @@
             var selectedProject = _ide.SelectedItems.Item(1).Project;
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedProject.Name, UnifyOperation);
+            return;
 
             void UnifyOperation(LineEnding lineEnding)
             {
@@ -274,6 +282,8 @@
             var selectedFile = _ide.SelectedItems.Item(1).ProjectItem;
 
             UnifyLineEndingsFromSolutionExplorerMenuCommand(selectedFile.Name, UnifyOperation, DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name));
+
+            return;
 
             void UnifyOperation(LineEnding lineEnding)
             {
