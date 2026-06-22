@@ -22,18 +22,30 @@
                 return result;
             }
 
-            using (var reader = XmlReader.Create(filePath))
+            try
             {
-                while (reader.Read())
+                using (var reader = XmlReader.Create(filePath))
                 {
-                    if (reader.Name == "file")
+                    while (reader.Read())
                     {
-                        if (Enum.TryParse(reader["lineEndings"], out LineEndingsChanger.LineEnding lineEndings))
+                        if (reader.Name == "file")
                         {
-                            result[reader["path"]] = new LastChanges(long.Parse(reader["dateUnified"]), lineEndings);
+                            if (Enum.TryParse(reader["lineEndings"], out LineEndingsChanger.LineEnding lineEndings)
+                                && long.TryParse(reader["dateUnified"], out var ticks)
+                                && reader["path"] is string path)
+                            {
+                                result[path] = new LastChanges(ticks, lineEndings);
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception)
+            {
+                // A corrupt or unreadable change log must not abort unifying; treating it as
+                // empty just means some files get re-unified, which is safe. The log is
+                // rewritten by SaveLastChanges once the operation completes.
+                return new Dictionary<string, LastChanges>();
             }
 
             return result;
