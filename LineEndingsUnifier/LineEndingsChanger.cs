@@ -84,22 +84,25 @@
                             }
                         }
 
+                        // Each style wins only on a strict majority; Linux is the tie-break default
+                        // (including the all-zero case), since converting an ambiguous file to Linux
+                        // is far less surprising than converting it to Macintosh CRs.
                         if (numberOfWindowsLineEndings > numberOfLinuxLineEndings &&
                             numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
                         {
                             desiredLineEndingReplacement = LineEndingSearchPattern.Windows;
                             unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonWindowsLineEndingFinderFactory();
                         }
-                        else if (numberOfLinuxLineEndings > numberOfWindowsLineEndings &&
-                                 numberOfLinuxLineEndings > numberOfMacintoshLineEndings)
-                        {
-                            desiredLineEndingReplacement = LineEndingSearchPattern.Linux;
-                            unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonLinuxLineEndingFinderFactory();
-                        }
-                        else
+                        else if (numberOfMacintoshLineEndings > numberOfWindowsLineEndings &&
+                                 numberOfMacintoshLineEndings > numberOfLinuxLineEndings)
                         {
                             desiredLineEndingReplacement = LineEndingSearchPattern.Macintosh;
                             unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonMacintoshLineEndingFinderFactory();
+                        }
+                        else
+                        {
+                            desiredLineEndingReplacement = LineEndingSearchPattern.Linux;
+                            unexpectedLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetNonLinuxLineEndingFinderFactory();
                         }
 
                         break;
