@@ -153,11 +153,8 @@
             }
 
             // ReSharper disable once PossibleNullReferenceException
-            var findService = _componentModel.GetService<IFindService>();
-            if (findService == null)
-            {
-                throw new COMException($"Unable to resolve service {nameof(IFindService)}");
-            }
+            // ReSharper disable once ConstantNullCoalescingCondition
+            var findService = _componentModel.GetService<IFindService>() ?? throw new COMException($"Unable to resolve service {nameof(IFindService)}");
             _lineEndingFinderFactoryProvider = new LineEndingFinderFactoryProvider(findService);
 
             // ReSharper disable once SuspiciousTypeConversion.Global
@@ -457,9 +454,8 @@
         {
             wpfTextView = null;
 
-            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>();
-            if (editorAdaptersFactoryService == null) throw new COMException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
-
+            // ReSharper disable once ConstantNullCoalescingCondition
+            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>() ?? throw new COMException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
             if (VsShellUtilities.IsDocumentOpen(this,
                                                 documentFullPath,
                                                 Guid.Empty,

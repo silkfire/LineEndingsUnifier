@@ -5,6 +5,7 @@
     using Microsoft.VisualStudio.Shell;
 
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
 
     internal static class Extensions
@@ -13,7 +14,7 @@
 
         public static bool EndsWithAny(this string str, string[] strings) => strings.Any(str.EndsWith);
 
-        public static IReadOnlyList<Project> GetAllProjects(this Solution solution)
+        public static ReadOnlyCollection<Project> GetAllProjects(this Solution solution)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
