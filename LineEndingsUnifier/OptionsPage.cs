@@ -7,9 +7,7 @@
     using System;
     using System.ComponentModel;
     using System.IO;
-    using System.Runtime.InteropServices;
 
-    [ClassInterface(ClassInterfaceType.AutoDual)]
     internal class OptionsPage : DialogPage
     {
         private const string Category = "Line Endings Unifier";
