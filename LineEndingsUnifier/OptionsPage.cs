@@ -101,7 +101,7 @@
                     {
                         if (ide.Solution.FullName != "")
                         {
-                            var path = $"{Path.GetDirectoryName(ide.Solution.FullName)}.{ChangeLogFileExtension}";
+                            var path = ChangesManager.GetChangeLogPath(ide.Solution.FullName);
 
                             if (File.Exists(path))
                             {

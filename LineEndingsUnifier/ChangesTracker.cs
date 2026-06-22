@@ -10,13 +10,16 @@
 
     internal class ChangesManager
     {
+        public static string GetChangeLogPath(string solutionFullName) =>
+            $"{Path.GetDirectoryName(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
+
         public Dictionary<string, LastChanges> GetLastChanges(Solution solution)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             var result = new Dictionary<string, LastChanges>();
 
-            var filePath = $"{Path.GetDirectoryName(solution.FullName)}.{OptionsPage.ChangeLogFileExtension}";
+            var filePath = GetChangeLogPath(solution.FullName);
             if (!File.Exists(filePath))
             {
                 return result;
@@ -57,7 +60,7 @@
 
             if (lastChanges != null && lastChanges.Keys.Count > 0)
             {
-                var filePath = $"{Path.GetDirectoryName(solution.FullName)}.{OptionsPage.ChangeLogFileExtension}";
+                var filePath = GetChangeLogPath(solution.FullName);
 
                 using (var writer = XmlWriter.Create(filePath))
                 {
