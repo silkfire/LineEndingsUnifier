@@ -38,6 +38,6 @@
 
         public IFinderFactory GetNonWindowsLineEndingFinderFactory() => _nonWindowsLineEndingFinderFactory;
         public IFinderFactory GetNonLinuxLineEndingFinderFactory() => _nonLinuxLineEndingFinderFactory;
-        public IFinderFactory GetNonMacintoshLineEndingFinderFactory() => _macintoshLineEndingFinderFactory;
+        public IFinderFactory GetNonMacintoshLineEndingFinderFactory() => _nonMacintoshLineEndingFinderFactory;
     }
 }
