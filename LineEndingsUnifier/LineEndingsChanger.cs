@@ -8,8 +8,6 @@
 
     internal static class LineEndingsChanger
     {
-        //private const int SB_VERT = 1;
-
         public enum LineEnding
         {
             Windows,
@@ -110,8 +108,6 @@
                 if (unexpectedLineEndingMatches.Length > 0)
                 {
                     var caretPositionBeforeEdit = textView.Caret.Position.BufferPosition;
-                    //var textViewLinesTopBeforeEdit = textView.TextViewLines.FirstVisibleLine.Top;
-                    //var textViewLineCountTopBeforeEdit = textView.TextViewLines.Count;
 
                     var undoManager = textBuffer.Properties.GetProperty<ITextBufferUndoManager>(typeof(ITextBufferUndoManager));
                     using (var textEdit = undoManager.TextBuffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null))
@@ -128,12 +124,6 @@
 
                     var caretPositionAfterEdit = caretPositionBeforeEdit.TranslateTo(textView.TextSnapshot, PointTrackingMode.Positive);
                     textView.Caret.MoveTo(caretPositionAfterEdit);
-
-                    //var textViewLineCountTopAfterEdit = textView.TextViewLines.Count;
-
-                    ////textView.DisplayTextLineContainingBufferPosition(textView.TextViewLines.FirstVisibleLine.Start, textViewLinesTopBeforeEdit, ViewRelativePosition.Top);
-                    ////textView.ViewScroller.ScrollViewportVerticallyByPixels(-16);
-                    //textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, 1);
                 }
 
                 numberOfChangedLineEndingsInternal = unexpectedLineEndingMatches.Length;
