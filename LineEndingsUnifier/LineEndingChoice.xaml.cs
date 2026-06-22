@@ -31,28 +31,11 @@
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            var buttonContent = (sender as RadioButton).Content.ToString();
+            var tag = (sender as RadioButton)?.Tag?.ToString();
 
-            if (buttonContent.StartsWith("Windows"))
-            {
-                LineEnding = LineEndingsChanger.LineEnding.Windows;
-            }
-            else if (buttonContent.StartsWith("Linux"))
-            {
-                LineEnding = LineEndingsChanger.LineEnding.Linux;
-            }
-            else if (buttonContent.StartsWith("Macintosh"))
-            {
-                LineEnding = LineEndingsChanger.LineEnding.Macintosh;
-            }
-            else if (buttonContent.StartsWith("Dominant"))
-            {
-                LineEnding = LineEndingsChanger.LineEnding.Dominant;
-            }
-            else
-            {
-                LineEnding = LineEndingsChanger.LineEnding.None;
-            }
+            LineEnding = System.Enum.TryParse(tag, out LineEndingsChanger.LineEnding lineEnding)
+                ? lineEnding
+                : LineEndingsChanger.LineEnding.None;
         }
 
         private void Change_Button_Click(object sender, RoutedEventArgs e)

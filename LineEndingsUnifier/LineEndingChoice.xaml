@@ -12,10 +12,10 @@
         <StackPanel Grid.Row="0" Margin="15,12,0,5">
             <TextBlock Text="Select line ending sequence:" FontWeight="Bold" Margin="0,0,0,6"/>
 
-            <RadioButton Name="Windows_RadioButton" Content="Windows (CR LF)" Checked="RadioButton_Checked" Margin="0,10,0,0"/>
-            <RadioButton Name="Linux_RadioButton" Content="Linux (LF)" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
-            <RadioButton Name="Macintosh_RadioButton" Content="Macintosh (CR)" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
-            <RadioButton Name="Dominant_RadioButton" Content="Dominant" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
+            <RadioButton Name="Windows_RadioButton" Tag="Windows" Content="Windows (CR LF)" Checked="RadioButton_Checked" Margin="0,10,0,0"/>
+            <RadioButton Name="Linux_RadioButton" Tag="Linux" Content="Linux (LF)" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
+            <RadioButton Name="Macintosh_RadioButton" Tag="Macintosh" Content="Macintosh (CR)" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
+            <RadioButton Name="Dominant_RadioButton" Tag="Dominant" Content="Dominant" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
         </StackPanel>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,23,0,5">
             <Button Name="Change_Button" Margin="0,0,20,10" Width="80" Height="30" Content="OK" Click="Change_Button_Click"/>
