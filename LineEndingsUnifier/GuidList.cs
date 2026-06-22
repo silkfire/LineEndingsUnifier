@@ -10,5 +10,5 @@
         public static readonly Guid guidLine_Endings_UnifierCmdSet_Folder = new Guid("078bdabd-c25e-49b8-acab-61655b84573f");
         public static readonly Guid guidLine_Endings_UnifierCmdSet_Project = new Guid("c79636f0-0d76-41a1-80bf-feee33bf0ac9");
         public static readonly Guid guidLine_Endings_UnifierCmdSet_File = new Guid("e65fc73a-f162-437e-a8b4-b7e3469d83cb");
-    };
+    }
 }
