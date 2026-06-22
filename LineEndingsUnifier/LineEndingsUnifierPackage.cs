@@ -404,6 +404,10 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
+            // These three edits (trailing-whitespace removal, line-ending unification, final
+            // newline) run in sequence and each re-reads textBuffer.CurrentSnapshot, so every
+            // step sees the result of the previous one. Order matters: don't reorder them or
+            // cache a snapshot/span across them, or the later edits will operate on stale spans.
             string newlineString = null;
 
             if (OptionsPage.RemoveTrailingWhitespace)
