@@ -17,12 +17,15 @@
             None
         }
 
+        // Restricted subset of LineEnding shown in the options dropdown (excludes None).
+        // Members are anchored to their LineEnding counterparts so a (LineEnding) cast stays
+        // correct even if either enum is reordered.
         public enum LineEndingList
         {
-            Windows,
-            Linux,
-            Macintosh,
-            Dominant
+            Windows = LineEnding.Windows,
+            Linux = LineEnding.Linux,
+            Macintosh = LineEnding.Macintosh,
+            Dominant = LineEnding.Dominant
         }
 
         public static void ChangeLineEndings(LineEndingFinderFactoryProvider lineEndingFinderFactoryProvider, ITextBuffer textBuffer, IWpfTextView textView, LineEnding desiredLineEnding, out int? numberOfChangedLineEndings, out int? numberOfLineEndingsOfAnyType, bool writeReport)
