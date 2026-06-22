@@ -59,18 +59,29 @@
 
                         break;
                     case LineEnding.Dominant:
-                        var windowsLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetWindowsLineEndingFinderFactory();
-                        var windowsLineEndingFinder = windowsLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                        var numberOfWindowsLineEndings = windowsLineEndingFinder.FindAll().Count();
+                        // Classify the matches we already found in a single pass instead of
+                        // running three additional full-buffer regex scans. A "\r\n" match has
+                        // length 2 (Windows); a length-1 match is either "\r" (Macintosh) or "\n" (Linux).
+                        var snapshot = textBuffer.CurrentSnapshot;
+                        var numberOfWindowsLineEndings = 0;
+                        var numberOfLinuxLineEndings = 0;
+                        var numberOfMacintoshLineEndings = 0;
 
-                        var linuxLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetLinuxLineEndingFinderFactory();
-                        var linuxLineEndingFinder = linuxLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                        var numberOfLinuxLineEndings = linuxLineEndingFinder.FindAll().Count();
-
-                        var macintoshLineEndingFinderFactory = lineEndingFinderFactoryProvider.GetMacintoshLineEndingFinderFactory();
-                        var macintoshLineEndingFinder = macintoshLineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
-                        var numberOfMacintoshLineEndings = macintoshLineEndingFinder.FindAll().Count();
-
+                        foreach (var lineEndingMatch in allLineEndingMatches)
+                        {
+                            if (lineEndingMatch.Length == 2)
+                            {
+                                numberOfWindowsLineEndings++;
+                            }
+                            else if (snapshot[lineEndingMatch.Start] == '\r')
+                            {
+                                numberOfMacintoshLineEndings++;
+                            }
+                            else
+                            {
+                                numberOfLinuxLineEndings++;
+                            }
+                        }
 
                         if (numberOfWindowsLineEndings > numberOfLinuxLineEndings &&
                             numberOfWindowsLineEndings > numberOfMacintoshLineEndings)
