@@ -4,6 +4,7 @@
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Operations;
 
+    using System;
     using System.Linq;
 
     internal static class LineEndingsChanger
@@ -39,8 +40,8 @@
 
             if (allLineEndingMatches.Length > 0)
             {
-                string desiredLineEndingReplacement = null;
-                IFinderFactory unexpectedLineEndingFinderFactory = null;
+                string desiredLineEndingReplacement;
+                IFinderFactory unexpectedLineEndingFinderFactory;
 
                 switch (desiredLineEnding)
                 {
@@ -106,6 +107,8 @@
                         }
 
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(desiredLineEnding), desiredLineEnding, "Unsupported line ending enum value");
                 }
 
 
