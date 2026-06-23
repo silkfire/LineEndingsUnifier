@@ -8,11 +8,13 @@
     using System.ComponentModel;
     using System.IO;
 
-    internal class OptionsPage : DialogPage
+    internal sealed class OptionsPage : DialogPage
     {
         private const string Category = "Line Endings Unifier";
 
         public const string ChangeLogFileExtension = "leu";
+
+        private static readonly char[] FileListSeparators = { ';' };
 
         private bool _trackChanges;
 
@@ -37,7 +39,7 @@
             get => _supportedFileFormats;
             set
             {
-                SupportedFileFormatsArray = value.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                SupportedFileFormatsArray = value.Replace(" ", "").Split(FileListSeparators, StringSplitOptions.RemoveEmptyEntries);
                 _supportedFileFormats = value;
             }
         }
@@ -55,7 +57,7 @@
             get => _supportedFilenames;
             set
             {
-                SupportedFilenamesArray =  value.Replace(" ", "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                SupportedFilenamesArray =  value.Replace(" ", "").Split(FileListSeparators, StringSplitOptions.RemoveEmptyEntries);
                 _supportedFilenames = value;
             }
         }

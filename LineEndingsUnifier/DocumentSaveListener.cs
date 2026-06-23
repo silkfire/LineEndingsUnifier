@@ -6,7 +6,7 @@
 
     using System;
 
-    internal class DocumentSaveListener : IVsRunningDocTableEvents3, IDisposable
+    internal sealed class DocumentSaveListener : IVsRunningDocTableEvents3, IDisposable
     {
         public event OnBeforeSaveHandler BeforeSave;
 

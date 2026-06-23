@@ -2,7 +2,7 @@
 {
     using Microsoft.VisualStudio.Text.Operations;
 
-    internal class LineEndingFinderFactoryProvider
+    internal sealed class LineEndingFinderFactoryProvider
     {
         private readonly IFinderFactory _lineEndingFinderFactory;
         private readonly IFinderFactory _consecutiveWhiteSpaceFollowedByLineEndingFinderFactory;

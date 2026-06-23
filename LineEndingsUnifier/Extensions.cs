@@ -40,7 +40,7 @@
             return projects.AsReadOnly();
         }
 
-        private static IEnumerable<Project> GetSolutionFolderProjects(Project solutionFolder)
+        private static List<Project> GetSolutionFolderProjects(Project solutionFolder)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 

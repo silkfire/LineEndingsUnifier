@@ -5,15 +5,16 @@
 
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Xml;
 
-    internal class ChangesManager
+    internal static class ChangesManager
     {
         public static string GetChangeLogPath(string solutionFullName) =>
             $"{Path.GetDirectoryName(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
 
-        public Dictionary<string, LastChanges> GetLastChanges(Solution solution)
+        public static Dictionary<string, LastChanges> GetLastChanges(Solution solution)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -34,7 +35,7 @@
                         if (reader.Name == "file")
                         {
                             if (Enum.TryParse(reader["lineEndings"], out LineEndingsChanger.LineEnding lineEndings)
-                                && long.TryParse(reader["dateUnified"], out var ticks)
+                                && long.TryParse(reader["dateUnified"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var ticks)
                                 && reader["path"] is string path)
                             {
                                 result[path] = new LastChanges(ticks, lineEndings);
@@ -54,7 +55,7 @@
             return result;
         }
 
-        public void SaveLastChanges(Solution solution, Dictionary<string, LastChanges> lastChanges)
+        public static void SaveLastChanges(Solution solution, Dictionary<string, LastChanges> lastChanges)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -74,7 +75,7 @@
                             writer.WriteStartElement("file");
 
                             writer.WriteAttributeString("path", key);
-                            writer.WriteAttributeString("dateUnified", lastChanges[key].Ticks.ToString());
+                            writer.WriteAttributeString("dateUnified", lastChanges[key].Ticks.ToString(CultureInfo.InvariantCulture));
                             writer.WriteAttributeString("lineEndings", lastChanges[key].LineEnding.ToString());
 
                             writer.WriteEndElement();

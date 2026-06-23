@@ -19,6 +19,8 @@
     using System.Collections.Generic;
     using System.ComponentModel.Design;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
@@ -31,6 +33,8 @@
     [Guid(GuidList.guidLine_Endings_UnifierPkgString)]
     [ProvideOptionPage(typeof(OptionsPage), "Line Endings Unifier", "General Settings", 0, 0, true)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [SuppressMessage("Reliability", "CA1001:Types that own disposable fields should be disposable",
+        Justification = "AsyncPackage implements IDisposable and seals Dispose(); the disposable field is released via the overridden Dispose(bool). CA1001 does not recognize this inherited dispose pattern.")]
     public sealed class LineEndingsUnifierAsyncPackage: AsyncPackage
     {
         private static class LogStrings
@@ -45,7 +49,6 @@
 
         private RunningDocumentTable _runningDocumentTable;
         private DocumentSaveListener _documentSaveListener;
-        private ChangesManager _changesManager;
 
         private bool _isUnifyingLocked;
         private Dictionary<string, LastChanges> _changeLog;
@@ -68,26 +71,26 @@
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             // runs in the background thread and doesn't affect the responsiveness of the UI thread.
-            await Task.Delay(5_000, cancellationToken);
+            await Task.Delay(5_000, cancellationToken).ConfigureAwait(true);
 
-            await base.InitializeAsync(cancellationToken, progress);
+            await base.InitializeAsync(cancellationToken, progress).ConfigureAwait(true);
 
             // Switches to the UI thread in order to consume some services used in command initialization
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             try
             {
-                _ide = await GetServiceAsync<DTE, DTE2>(true, cancellationToken);
+                _ide = await GetServiceAsync<DTE, DTE2>(true, cancellationToken).ConfigureAwait(true);
                 Assumes.Present(_ide);
             }
-            catch (ServiceUnavailableException)
+            catch (ServiceUnavailableException ex)
             {
-                throw new COMException($"Unable to resolve service {nameof(DTE2)}");
+                throw new InvalidOperationException($"Unable to resolve service {nameof(DTE2)}", ex);
             }
 
             try
             {
-                var menuCommandService = await GetServiceAsync<IMenuCommandService, OleMenuCommandService>(true, cancellationToken);
+                var menuCommandService = await GetServiceAsync<IMenuCommandService, OleMenuCommandService>(true, cancellationToken).ConfigureAwait(true);
                 Assumes.Present(menuCommandService);
 
 
@@ -121,40 +124,40 @@
 
                 menuCommandService.AddCommand(itemMenuCommand);
             }
-            catch (ServiceUnavailableException)
+            catch (ServiceUnavailableException ex)
             {
-                throw new COMException($"Unable to resolve service {nameof(IMenuCommandService)}");
+                throw new InvalidOperationException($"Unable to resolve service {nameof(IMenuCommandService)}", ex);
             }
 
             try
             {
-                _outputWindow = await GetServiceAsync<SVsOutputWindow, IVsOutputWindow>(true, cancellationToken);
+                _outputWindow = await GetServiceAsync<SVsOutputWindow, IVsOutputWindow>(true, cancellationToken).ConfigureAwait(true);
                 Assumes.Present(_outputWindow);
 
                 // ReSharper disable once PossibleNullReferenceException
                 _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
             }
-            catch (ServiceUnavailableException)
+            catch (ServiceUnavailableException ex)
             {
-                throw new COMException($"Unable to resolve service {nameof(IVsOutputWindow)}");
+                throw new InvalidOperationException($"Unable to resolve service {nameof(IVsOutputWindow)}", ex);
             }
 
             try
             {
-                _componentModel = await GetServiceAsync<SComponentModel, IComponentModel>(true, cancellationToken);
+                _componentModel = await GetServiceAsync<SComponentModel, IComponentModel>(true, cancellationToken).ConfigureAwait(true);
                 Assumes.Present(_componentModel);
 
                 // ReSharper disable once PossibleNullReferenceException
                 _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
             }
-            catch (ServiceUnavailableException)
+            catch (ServiceUnavailableException ex)
             {
-                throw new COMException($"Unable to resolve service {nameof(IComponentModel)}");
+                throw new InvalidOperationException($"Unable to resolve service {nameof(IComponentModel)}", ex);
             }
 
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once ConstantNullCoalescingCondition
-            var findService = _componentModel.GetService<IFindService>() ?? throw new COMException($"Unable to resolve service {nameof(IFindService)}");
+            var findService = _componentModel.GetService<IFindService>() ?? throw new InvalidOperationException($"Unable to resolve service {nameof(IFindService)}");
             _lineEndingFinderFactoryProvider = new LineEndingFinderFactoryProvider(findService);
 
             // ReSharper disable once SuspiciousTypeConversion.Global
@@ -163,7 +166,6 @@
             _runningDocumentTable = new RunningDocumentTable(serviceProvider);
             _documentSaveListener = new DocumentSaveListener(_runningDocumentTable);
             _documentSaveListener.BeforeSave += DocumentSaveListener_BeforeSave;
-            _changesManager = new ChangesManager();
         }
 
         private void ItemMenuCommand_BeforeQueryStatus(object sender, EventArgs _)
@@ -196,7 +198,7 @@
 
                         if (writeReport)
                         {
-                            Output(string.Format($"{LogStrings.OperationResultTemplate}\n", documentFullPath, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
+                            Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.OperationResultTemplate}\n", documentFullPath, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
                             Output($"{LogStrings.Done}\n");
                         }
                     }
@@ -305,7 +307,7 @@
                         var trackChanges = OptionsPage.TrackChanges;
 
                         if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
-                        if (trackChanges) _changeLog = _changesManager.GetLastChanges(_ide.Solution);
+                        if (trackChanges) _changeLog = ChangesManager.GetLastChanges(_ide.Solution);
 
                         Stopwatch sw = null;
                         if (writeReport)
@@ -323,10 +325,10 @@
                             secondsElapsed = sw.ElapsedMilliseconds / 1000.0;
                         }
 
-                        if (trackChanges) _changesManager.SaveLastChanges(_ide.Solution, _changeLog);
+                        if (trackChanges) ChangesManager.SaveLastChanges(_ide.Solution, _changeLog);
                         _changeLog = null;
 
-                        if (writeReport) Output($"{string.Format(LogStrings.DoneTemplate, secondsElapsed.Value)}\n");
+                        if (writeReport) Output($"{string.Format(CultureInfo.InvariantCulture, LogStrings.DoneTemplate, secondsElapsed.Value)}\n");
                     });
                 }
             }
@@ -386,11 +388,11 @@
                     }
 
                     if (trackChanges) _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
-                    if (writeReport) Output(string.Format($"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
+                    if (writeReport) Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
                 }
                 else
                 {
-                    if (writeReport) Output(string.Format($"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
+                    if (writeReport) Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
                 }
             }
 
@@ -455,7 +457,7 @@
             wpfTextView = null;
 
             // ReSharper disable once ConstantNullCoalescingCondition
-            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>() ?? throw new COMException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
+            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>() ?? throw new InvalidOperationException($"Unable to resolve service {nameof(IVsEditorAdaptersFactoryService)}");
             if (VsShellUtilities.IsDocumentOpen(this,
                                                 documentFullPath,
                                                 Guid.Empty,
@@ -493,6 +495,18 @@
             _outputWindow.GetPane(ref _outputWindowGuid, out var outputWindowPane);
 
             outputWindowPane.OutputStringThreadSafe(message);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && _documentSaveListener != null)
+            {
+                _documentSaveListener.BeforeSave -= DocumentSaveListener_BeforeSave;
+                _documentSaveListener.Dispose();
+                _documentSaveListener = null;
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
