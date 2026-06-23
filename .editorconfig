@@ -19,3 +19,10 @@ dotnet_diagnostic.CA1031.severity = suggestion
 # ConfigureAwait(false) is wrong in a VS extension — continuations must come
 # back to the main thread (JoinableTaskFactory handles affinity).
 dotnet_diagnostic.CA2007.severity = none
+
+dotnet_diagnostic.IDE0055.severity = none
+dotnet_diagnostic.IDE0008.severity = none
+dotnet_diagnostic.IDE0065.severity = none
+dotnet_diagnostic.IDE0010.severity = none
+dotnet_diagnostic.IDE0022.severity = none
+dotnet_diagnostic.IDE0058.severity = none
