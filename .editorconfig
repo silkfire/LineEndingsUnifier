@@ -1,0 +1,21 @@
+root = true
+
+[*.cs]
+
+# Promote every analyzer diagnostic (CA*, RS*, etc.) from its default
+# suggestion/hint severity up to warning so they surface in the Error List.
+# These remain non-fatal because TreatWarningsAsErrors is not set.
+dotnet_analyzer_diagnostic.severity = warning
+
+# Banned API analyzer (BannedSymbols.txt) — flags usages like
+# ClassInterfaceType.AutoDual so the DialogPage COM-resolution bug can't return.
+dotnet_diagnostic.RS0030.severity = warning
+
+# --- Dialed back: noisy or inappropriate for a Visual Studio package ---
+
+# Broad 'catch (Exception)' is intentional around VS shell/automation calls.
+dotnet_diagnostic.CA1031.severity = suggestion
+
+# ConfigureAwait(false) is wrong in a VS extension — continuations must come
+# back to the main thread (JoinableTaskFactory handles affinity).
+dotnet_diagnostic.CA2007.severity = none

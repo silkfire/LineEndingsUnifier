@@ -1,0 +1,1 @@
+F:System.Runtime.InteropServices.ClassInterfaceType.AutoDual; Do not use AutoDual class interfaces. They reference the full base-type chain via COM, which breaks DialogPage resolution (see GetDialogPage). Use ClassInterfaceType.None, or remove the [ClassInterface] attribute.
