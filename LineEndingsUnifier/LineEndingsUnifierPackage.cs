@@ -192,7 +192,10 @@
                     if (DocumentMatchesConfiguredFileFormatsOrFilenames(Path.GetFileName(documentFullPath)))
                     {
                         var writeReport = OptionsPage.WriteReport;
-                        if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
+                        if (writeReport)
+                        {
+                            Output($"{LogStrings.UnifyingStarted}\n");
+                        }
 
                         UnifyLineEndingsInDocument(textBuffer, textView, DefaultLineEnding, out var numberOfChangedLineEndings, out var numberOfLineEndingsOfAnyType, writeReport);
 
@@ -306,8 +309,15 @@
                         var writeReport = OptionsPage.WriteReport;
                         var trackChanges = OptionsPage.TrackChanges;
 
-                        if (writeReport) Output($"{LogStrings.UnifyingStarted}\n");
-                        if (trackChanges) _changeLog = ChangesManager.GetLastChanges(_ide.Solution);
+                        if (writeReport)
+                        {
+                            Output($"{LogStrings.UnifyingStarted}\n");
+                        }
+
+                        if (trackChanges)
+                        {
+                            _changeLog = ChangesManager.GetLastChanges(_ide.Solution);
+                        }
 
                         Stopwatch sw = null;
                         if (writeReport)
@@ -325,10 +335,17 @@
                             secondsElapsed = sw.ElapsedMilliseconds / 1000.0;
                         }
 
-                        if (trackChanges) ChangesManager.SaveLastChanges(_ide.Solution, _changeLog);
+                        if (trackChanges)
+                        {
+                            ChangesManager.SaveLastChanges(_ide.Solution, _changeLog);
+                        }
+
                         _changeLog = null;
 
-                        if (writeReport) Output($"{string.Format(CultureInfo.InvariantCulture, LogStrings.DoneTemplate, secondsElapsed.Value)}\n");
+                        if (writeReport)
+                        {
+                            Output($"{string.Format(CultureInfo.InvariantCulture, LogStrings.DoneTemplate, secondsElapsed.Value)}\n");
+                        }
                     });
                 }
             }
@@ -387,12 +404,22 @@
                         _isUnifyingLocked = false;
                     }
 
-                    if (trackChanges) _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
-                    if (writeReport) Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
+                    if (trackChanges)
+                    {
+                        _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
+                    }
+
+                    if (writeReport)
+                    {
+                        Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.OperationResultTemplate}\n", document.FullName, numberOfChangedLineEndings, numberOfLineEndingsOfAnyType));
+                    }
                 }
                 else
                 {
-                    if (writeReport) Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
+                    if (writeReport)
+                    {
+                        Output(string.Format(CultureInfo.InvariantCulture, $"{LogStrings.NoModificationRequiredTemplate}\n", document.FullName));
+                    }
                 }
             }
 
@@ -470,7 +497,10 @@
 
                 if (viewAdapter.GetBuffer(out var textLines) == 0)
                 {
-                    if (textLines is IVsTextBuffer buffer) return editorAdaptersFactoryService.GetDataBuffer(buffer);
+                    if (textLines is IVsTextBuffer buffer)
+                    {
+                        return editorAdaptersFactoryService.GetDataBuffer(buffer);
+                    }
                 }
             }
 

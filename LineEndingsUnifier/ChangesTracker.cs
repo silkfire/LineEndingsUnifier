@@ -11,8 +11,7 @@
 
     internal static class ChangesManager
     {
-        public static string GetChangeLogPath(string solutionFullName) =>
-            $"{Path.GetDirectoryName(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
+        public static string GetChangeLogPath(string solutionFullName) => $"{Path.GetDirectoryName(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
 
         public static Dictionary<string, LastChanges> GetLastChanges(Solution solution)
         {
