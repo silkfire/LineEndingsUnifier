@@ -169,10 +169,33 @@
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var selectedFile = _ide.SelectedItems.Item(1).ProjectItem;
+            // This handler is only ever wired to MenuCommand instances, so the cast never fails;
+            // bail out defensively if it ever does rather than dereferencing null below.
+            if (!(sender is MenuCommand itemMenuCommand))
+            {
+                return;
+            }
 
-            var itemMenuCommand = sender as MenuCommand;
-            // ReSharper disable once PossibleNullReferenceException
+            // BeforeQueryStatus fires constantly (including during menu opens with no or a
+            // non-file selection), where Item(1) throws and .ProjectItem can be null. Any such
+            // failure just means the command shouldn't be shown, so hide it and bail.
+            ProjectItem selectedFile = null;
+            try
+            {
+                selectedFile = _ide.SelectedItems.Item(1).ProjectItem;
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is COMException)
+            {
+                // no selection / index out of range
+            }
+
+            if (selectedFile == null)
+            {
+                itemMenuCommand.Visible = false;
+
+                return;
+            }
+
             itemMenuCommand.Visible = DocumentMatchesConfiguredFileFormatsOrFilenames(selectedFile.Name);
         }
 
