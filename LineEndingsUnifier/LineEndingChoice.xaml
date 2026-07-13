@@ -18,8 +18,8 @@
             <RadioButton Name="Dominant_RadioButton" Tag="Dominant" Content="Dominant" Checked="RadioButton_Checked" Margin="0,7,0,0"/>
         </StackPanel>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,23,0,5">
-            <Button Name="Change_Button" Margin="0,0,20,10" Width="80" Height="30" Content="OK" Click="Change_Button_Click"/>
-            <Button Name="Cancel_Button" Margin="0,0,0,10" Width="80" Height="30" Content="Cancel" Click="Cancel_Button_Click"/>
+            <Button Name="Change_Button" IsDefault="True" Margin="0,0,20,10" Width="80" Height="30" Content="OK" Click="Change_Button_Click"/>
+            <Button Name="Cancel_Button" IsCancel="True" Margin="0,0,0,10" Width="80" Height="30" Content="Cancel" Click="Cancel_Button_Click"/>
         </StackPanel>
     </Grid>
 </Window>
