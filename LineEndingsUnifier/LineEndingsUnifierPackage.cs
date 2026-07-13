@@ -186,6 +186,14 @@
                 {
                     var textBuffer = GetTextBufferFromDocCookie(docCookie, out var documentFullPath, out var textView);
 
+                    // GetTextBuffer returns null when the document isn't open in a text view
+                    // (e.g. a designer or non-WPF view), in which case there is nothing to unify
+                    // and dereferencing the buffer below would throw inside this RDT event.
+                    if (textBuffer == null)
+                    {
+                        return VSConstants.S_OK;
+                    }
+
                     if (DocumentMatchesConfiguredFileFormatsOrFilenames(Path.GetFileName(documentFullPath)))
                     {
                         var writeReport = OptionsPage.WriteReport;

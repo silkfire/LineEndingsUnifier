@@ -116,7 +116,10 @@
                 var unexpectedLineEndingMatches = unexpectedLineEndingFinder.FindAll().ToArray();
                 if (unexpectedLineEndingMatches.Length > 0)
                 {
-                    var caretPositionBeforeEdit = textView.Caret.Position.BufferPosition;
+                    // textView is null when the document isn't open in a WPF text view; in that
+                    // case there is no caret to preserve, so we skip the caret save/restore and
+                    // just apply the edit.
+                    var caretPositionBeforeEdit = textView?.Caret.Position.BufferPosition;
 
                     var undoManager = textBuffer.Properties.GetProperty<ITextBufferUndoManager>(typeof(ITextBufferUndoManager));
                     using (var textEdit = undoManager.TextBuffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null))
@@ -131,8 +134,11 @@
                         undo.Complete();
                     }
 
-                    var caretPositionAfterEdit = caretPositionBeforeEdit.TranslateTo(textView.TextSnapshot, PointTrackingMode.Positive);
-                    textView.Caret.MoveTo(caretPositionAfterEdit);
+                    if (textView != null && caretPositionBeforeEdit.HasValue)
+                    {
+                        var caretPositionAfterEdit = caretPositionBeforeEdit.Value.TranslateTo(textView.TextSnapshot, PointTrackingMode.Positive);
+                        textView.Caret.MoveTo(caretPositionAfterEdit);
+                    }
                 }
 
                 numberOfChangedLineEndingsInternal = unexpectedLineEndingMatches.Length;
