@@ -70,9 +70,6 @@
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            // runs in the background thread and doesn't affect the responsiveness of the UI thread.
-            await Task.Delay(5_000, cancellationToken).ConfigureAwait(true);
-
             await base.InitializeAsync(cancellationToken, progress).ConfigureAwait(true);
 
             // Switches to the UI thread in order to consume some services used in command initialization
