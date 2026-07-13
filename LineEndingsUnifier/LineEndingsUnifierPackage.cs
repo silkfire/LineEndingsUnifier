@@ -404,9 +404,18 @@
 
                     if (documentWindow != null || OptionsPage.SaveFilesAfterUnifying)
                     {
+                        // The finally is essential: if Save() throws (locked file, source-control
+                        // veto, etc.) the flag must still be cleared, otherwise on-save unification
+                        // stays disabled for the rest of the session.
                         _isUnifyingLocked = true;
-                        document.Save();
-                        _isUnifyingLocked = false;
+                        try
+                        {
+                            document.Save();
+                        }
+                        finally
+                        {
+                            _isUnifyingLocked = false;
+                        }
                     }
 
                     if (trackChanges)
