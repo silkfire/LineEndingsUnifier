@@ -11,7 +11,17 @@
 
     internal static class ChangesManager
     {
-        public static string GetChangeLogPath(string solutionFullName) => $"{Path.GetDirectoryName(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
+        public static string GetChangeLogPath(string solutionFullName)
+        {
+            // Store the change log inside the solution folder (e.g. <solutionDir>\MySolution.leu)
+            // rather than beside it. The old upstream behavior appended the extension to the
+            // solution directory path itself, writing a sibling file outside the repo that
+            // could fail when the parent directory is read-only or the solution sits at a drive root.
+            var solutionDirectory = Path.GetDirectoryName(solutionFullName);
+            var logFileName = $"{Path.GetFileNameWithoutExtension(solutionFullName)}.{OptionsPage.ChangeLogFileExtension}";
+
+            return Path.Combine(solutionDirectory, logFileName);
+        }
 
         public static Dictionary<string, LastChanges> GetLastChanges(Solution solution)
         {
