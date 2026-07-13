@@ -416,7 +416,7 @@
             {
                 var trackChanges = OptionsPage.TrackChanges && _changeLog != null && (   !_changeLog.ContainsKey(document.FullName)
                                                                                       ||  _changeLog[document.FullName].LineEnding != lineEnding
-                                                                                      ||  _changeLog[document.FullName].Ticks < File.GetLastWriteTime(document.FullName).Ticks);
+                                                                                      ||  _changeLog[document.FullName].Ticks < File.GetLastWriteTimeUtc(document.FullName).Ticks);
 
                 var writeReport = OptionsPage.WriteReport;
 
@@ -443,7 +443,9 @@
 
                     if (trackChanges)
                     {
-                        _changeLog[document.FullName] = new LastChanges(DateTime.Now.Ticks, lineEnding);
+                        // Store UTC ticks so the comparison against File.GetLastWriteTimeUtc above
+                        // is apples-to-apples; local-time ticks skew by an hour across DST changes.
+                        _changeLog[document.FullName] = new LastChanges(DateTime.UtcNow.Ticks, lineEnding);
                     }
 
                     if (writeReport)
