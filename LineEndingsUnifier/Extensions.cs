@@ -4,15 +4,19 @@
     using EnvDTE80;
     using Microsoft.VisualStudio.Shell;
 
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
 
     internal static class Extensions
     {
-        public static bool EqualsAny(this string str, string[] strings) => strings.Contains(str);
+        // Windows filenames are case-insensitive and must be compared culture-invariantly
+        // (Ordinal avoids the Turkish-I problem), so file-format/filename matching uses
+        // OrdinalIgnoreCase rather than the default culture- and case-sensitive comparison.
+        public static bool EqualsAny(this string str, string[] strings) => strings.Contains(str, StringComparer.OrdinalIgnoreCase);
 
-        public static bool EndsWithAny(this string str, string[] strings) => strings.Any(str.EndsWith);
+        public static bool EndsWithAny(this string str, string[] strings) => strings.Any(s => str.EndsWith(s, StringComparison.OrdinalIgnoreCase));
 
         public static ReadOnlyCollection<Project> GetAllProjects(this Solution solution)
         {
