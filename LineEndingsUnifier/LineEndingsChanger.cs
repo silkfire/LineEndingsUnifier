@@ -35,7 +35,9 @@
             var lineEndingFinder = lineEndingFinderFactory.Create(textBuffer.CurrentSnapshot);
             var allLineEndingMatches = lineEndingFinder.FindAll().ToArray();
 
-            int? numberOfChangedLineEndingsInternal = null;
+            // Default to 0 (not null) so a file with no line endings at all reports
+            // "changed 0 out of 0 line endings" rather than a blank count.
+            int? numberOfChangedLineEndingsInternal = writeReport ? 0 : null as int?;
             numberOfLineEndingsOfAnyType = writeReport ? allLineEndingMatches.Length : null as int?;
 
             if (allLineEndingMatches.Length > 0)
