@@ -146,9 +146,6 @@
             {
                 _componentModel = await GetServiceAsync<SComponentModel, IComponentModel>(true, cancellationToken).ConfigureAwait(true);
                 Assumes.Present(_componentModel);
-
-                // ReSharper disable once PossibleNullReferenceException
-                _outputWindow.CreatePane(ref _outputWindowGuid, "Line Endings Unifier", 1, 1);
             }
             catch (ServiceUnavailableException ex)
             {
