@@ -41,7 +41,7 @@
                 {
                     while (reader.Read())
                     {
-                        if (reader.Name == "file")
+                        if (reader.NodeType == XmlNodeType.Element && reader.Name == "file")
                         {
                             if (Enum.TryParse(reader["lineEndings"], out LineEndingsChanger.LineEnding lineEndings)
                                 && long.TryParse(reader["dateUnified"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var ticks)
