@@ -2,6 +2,7 @@
 {
     using static LineEndingsChanger;
 
+    using Constants = EnvDTE.Constants;
     using EnvDTE;
     using EnvDTE80;
     using Microsoft;
@@ -404,7 +405,9 @@
             {
                 if (!OptionsPage.UnifyOnlyOpenFiles)
                 {
-                    documentWindow = item.Open();
+                    // Force the code (text) editor rather than whatever the default view kind for
+                    // the file type is (e.g. Designer view), since we need a text buffer to edit.
+                    documentWindow = item.Open(Constants.vsViewKindCode);
                 }
             }
 
@@ -529,6 +532,11 @@
                                                 out var windowFrame))
             {
                 var viewAdapter = VsShellUtilities.GetTextView(windowFrame);
+                if (viewAdapter == null)
+                {
+                    return null;
+                }
+
                 wpfTextView = editorAdaptersFactoryService.GetWpfTextView(viewAdapter);
 
                 if (viewAdapter.GetBuffer(out var textLines) == 0)
